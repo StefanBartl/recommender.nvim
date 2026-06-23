@@ -1,0 +1,302 @@
+*recommender.nvim.txt*  Lua alias suggester for Neovim.
+
+==============================================================================
+CONTENTS                                        *recommender.nvim-contents*
+
+  1. Introduction .............. |recommender.nvim-intro|
+  2. Requirements .............. |recommender.nvim-requirements|
+  3. Installation .............. |recommender.nvim-installation|
+  4. Setup ..................... |recommender.nvim-setup|
+  5. Configuration ............. |recommender.nvim-config|
+     5.1 analyzer .............. |recommender.nvim-config-analyzer|
+     5.2 threshold ............. |recommender.nvim-config-threshold|
+     5.3 custom_aliases ........ |recommender.nvim-config-aliases|
+     5.4 blacklist ............. |recommender.nvim-config-blacklist|
+     5.5 keymaps ............... |recommender.nvim-config-keymaps|
+  6. Command ................... |:Recommender|
+  7. Float keymaps ............. |recommender.nvim-float-keymaps|
+  8. Replace mode .............. |recommender.nvim-replace-mode|
+  9. Analyzers ................. |recommender.nvim-analyzers|
+ 10. Lua API ................... |recommender.nvim-api|
+ 11. Architecture .............. |recommender.nvim-architecture|
+
+==============================================================================
+1. INTRODUCTION                                   *recommender.nvim-intro*
+
+recommender.nvim analyzes the current Lua buffer for dotted chains that appear
+at or above a configurable frequency threshold and suggests `local` alias
+declarations for them.
+
+Example — if `vim.api` appears 6 times the plugin suggests: >
+
+  local api = vim.api
+<
+Two analysis backends are available: a fast regex scanner and a precise
+Tree-sitter-based scanner. Results are shown in a floating window with
+navigation, insert, yank, and batch-insert keymaps.
+
+==============================================================================
+2. REQUIREMENTS                                *recommender.nvim-requirements*
+
+  * Neovim >= 0.9
+  * (optional) Lua Tree-sitter parser — only needed for `analyzer = "treesitter"`
+    Install with: `:TSInstall lua`
+
+==============================================================================
+3. INSTALLATION                                *recommender.nvim-installation*
+
+lazy.nvim: >
+  {
+    "StefanBartl/recommender.nvim",
+    ft  = { "lua" },
+    cmd = { "Recommender" },
+    config = function()
+      require("recommender_nvim").setup()
+    end,
+  }
+<
+Local development: >
+  {
+    dir = "E:/repos/recommender.nvim",
+    ft  = { "lua" },
+    cmd = { "Recommender" },
+    config = function()
+      require("recommender_nvim").setup()
+    end,
+  }
+<
+==============================================================================
+4. SETUP                                          *recommender.nvim-setup*
+
+Call `setup()` once: >
+
+  require("recommender_nvim").setup({
+    -- see |recommender.nvim-config|
+  })
+<
+`setup()` is idempotent — calling it twice has no effect. It registers:
+
+  * The `:Recommender` user command (see |:Recommender|).
+  * Global keymaps when `keymaps = true` (the default).
+
+==============================================================================
+5. CONFIGURATION                                  *recommender.nvim-config*
+
+All keys are optional. Unset keys use the defaults shown below.
+
+------------------------------------------------------------------------------
+5.1 analyzer                           *recommender.nvim-config-analyzer*
+>
+  analyzer = "regex"   -- "regex" | "treesitter"
+<
+Controls which backend scans the buffer.
+
+  `"regex"`       Fast, pure Lua pattern matching. Works on any buffer, no
+                  parser installation required. May produce false positives
+                  inside strings or comments.
+
+  `"treesitter"`  Uses the Lua Tree-sitter grammar. More precise — only
+                  actual field expressions and call expressions are counted.
+                  Requires `:TSInstall lua`.
+
+You can override the analyzer per invocation: `:Recommender treesitter`
+
+------------------------------------------------------------------------------
+5.2 threshold                          *recommender.nvim-config-threshold*
+>
+  threshold = 3
+<
+A chain must appear at least this many times to appear as a suggestion.
+Lower values produce more suggestions; higher values reduce noise in large
+files. Override per invocation: `:Recommender regex 5`
+
+------------------------------------------------------------------------------
+5.3 custom_aliases                     *recommender.nvim-config-aliases*
+>
+  custom_aliases = {
+    ["vim.api"]        = "api",
+    ["vim.fn"]         = "fn",
+    ["vim.keymap.set"] = "km_set",
+    ["table.insert"]   = "tbl_insert",
+    ["string.format"]  = "str_fmt",
+    -- …
+  }
+<
+Maps a chain to a preferred alias variable name. When a chain has an entry
+here, the suggestion reads `local <alias> = <chain>` instead of the
+auto-generated name (last segment of the chain).
+
+The built-in default map covers common Neovim and stdlib chains. Pass your
+own table to extend or override it: >
+
+  custom_aliases = vim.tbl_extend("force",
+    require("recommender_nvim.custom_aliases"),
+    { ["my.custom.chain"] = "mcc" }
+  )
+<
+------------------------------------------------------------------------------
+5.4 blacklist                          *recommender.nvim-config-blacklist*
+>
+  blacklist = {}   -- empty by default
+<
+A list of chain prefixes that are never suggested. Matching is prefix-based:
+an entry of `"vim.fn"` blocks `"vim.fn"`, `"vim.fn.expand"`,
+`"vim.fn.bufadd"`, etc. >
+
+  blacklist = {
+    "vim.fn",      -- block all vim.fn.* chains
+    "table.insert", -- block exactly table.insert
+  }
+<
+The blacklist is evaluated before the threshold — a chain that appears 100
+times but is blacklisted will never appear.
+
+------------------------------------------------------------------------------
+5.5 keymaps                            *recommender.nvim-config-keymaps*
+>
+  keymaps = true
+<
+When `true`, the following global normal-mode keymaps are installed by
+`setup()`:
+
+  `<leader>lr`   `:Recommender`
+  `<leader>lR`   `:Recommender -r`  (replace mode)
+  `<leader>lrr`  `:Recommender regex`
+  `<leader>lrt`  `:Recommender treesitter`
+  `<leader>lrh`  `:Recommender regex 5`  (high threshold)
+
+Set `keymaps = false` to skip all of these and define your own.
+
+==============================================================================
+6. COMMAND                                                    *:Recommender*
+
+:Recommender [{flags}] [{analyzer}] [{threshold}]
+
+  Open the Recommender float for the current buffer. Running the command
+  while the float is already open closes it (toggle behavior).
+
+  Arguments (all optional, any order for flags):
+
+    {flags}
+      `-r` / `--replace`    Enable replace mode (see |recommender.nvim-replace-mode|).
+
+    {analyzer}
+      `regex`               Use the regex backend.
+      `treesitter`          Use the Tree-sitter backend.
+
+    {threshold}
+      Any positive integer. Overrides the configured threshold.
+
+  Examples: >
+    :Recommender
+    :Recommender treesitter
+    :Recommender regex 5
+    :Recommender -r treesitter 4
+<
+  Tab-completion is available for `regex`, `treesitter`, `-r`, `--replace`.
+
+==============================================================================
+7. FLOAT KEYMAPS                               *recommender.nvim-float-keymaps*
+
+All keymaps are buffer-local to the float window.
+
+  Key          Action~
+  j / ↓        Move to next suggestion
+  k / ↑        Move to previous suggestion
+  Enter        Insert selected alias into the source buffer
+  y            Yank selected alias to system clipboard (`+` and `*` registers)
+  A            Insert ALL visible aliases into the source buffer at once
+  Backspace    Ignore this suggestion for the current buffer session
+  U            Un-ignore all — restore all dismissed suggestions
+  q / Esc      Close the float
+  ?            Display keymap reference via vim.notify
+
+The "source buffer" is the buffer that was active when `:Recommender` was
+called. Insertion puts the alias on a new line at the current cursor position
+in the most recently used normal window.
+
+==============================================================================
+8. REPLACE MODE                               *recommender.nvim-replace-mode*
+
+Enabled with `-r` or `--replace`. When `Enter` is pressed in the float:
+
+1. The plugin looks for a `:Replace` user command (`vim.fn.exists(":Replace") == 2`).
+2. If found, it runs `:Replace <chain> <alias_var> %` to substitute all
+   occurrences of the chain in the buffer with the alias name.
+3. A one-shot `WinClosed` autocmd detects when the replace prompt (a
+   TelescopePrompt window) closes.
+4. After the replace, the `local alias = chain` declaration is inserted.
+
+If `:Replace` is not available, replace mode falls back to a plain alias
+insert (same as normal mode).
+
+The detection mechanism is event-driven — no polling, no timers, no race
+conditions. The autocmd is removed immediately after firing.
+
+==============================================================================
+9. ANALYZERS                                     *recommender.nvim-analyzers*
+
+------------------------------------------------------------------------------
+regex                                       *recommender.nvim-analyzer-regex*
+
+Scans lines with Lua string patterns. Collects 3-part chains first
+(`vim.api.nvim_*`), then 2-part (`vim.api`). Chains are deduplicated per
+line. Fast; works on unsaved buffers. May count chains inside string
+literals or comments.
+
+------------------------------------------------------------------------------
+treesitter                             *recommender.nvim-analyzer-treesitter*
+
+Uses `vim.treesitter.query.parse` to find `field_expression` and
+`call_expression` nodes in the Lua grammar. Counts only syntactically valid
+chains. Ignores string contents and comments automatically. Requires the Lua
+parser (`TSInstall lua`).
+
+Treesitter also applies a "common prefix" heuristic: if multiple chains share
+a common prefix of depth >= 2 (e.g., `vim.api.nvim_buf_*` chains all share
+`vim.api`), the alias targets the prefix rather than the full chain.
+
+==============================================================================
+10. LUA API                                        *recommender.nvim-api*
+
+After `setup()`, only one public function is exposed:
+
+                                              *recommender_nvim.setup()*
+`require("recommender_nvim").setup([opts])`
+
+  Initialize the plugin. Idempotent — safe to call multiple times (only
+  the first call takes effect).
+
+Internal modules can be imported directly if needed: >
+
+  local rendering = require("recommender_nvim.rendering")
+  rendering.close()   -- programmatically close the float
+
+  local bl = require("recommender_nvim.blacklist")
+  bl.is_blacklisted("vim.fn.expand", { "vim.fn" })  -- true
+
+  local regex = require("recommender_nvim.analyzers.regex")
+  local suggestions = regex.analyze(3, {}, {})
+<
+==============================================================================
+11. ARCHITECTURE                              *recommender.nvim-architecture*
+
+>
+  lua/recommender_nvim/
+    init.lua              setup(), :Recommender command, global keymaps
+    config.lua            option merging + defaults
+    rendering.lua         float window: open / close / highlight
+    keymaps.lua           buffer-local keymaps for the float
+    autocmds.lua          one-shot WinClosed hook (replace-mode)
+    blacklist.lua         prefix matching + default list
+    custom_aliases.lua    built-in chain → alias name map
+    analyzers/
+      regex.lua           regex-based scanner
+      treesitter.lua      Tree-sitter-based scanner
+    util/
+      notify.lua          vim.notify wrapper
+  plugin/
+    recommender_nvim.lua  loaded-guard (vim.g.loaded_recommender_nvim)
+<
+==============================================================================
+vim:ft=help:tw=78:ts=2:et:
