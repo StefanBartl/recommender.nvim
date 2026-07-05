@@ -1,4 +1,4 @@
----@module 'recommender_nvim.autocmds'
+---@module 'recommender_nvim.float.autocmds'
 ---Temporary autocmd used by replace-mode to detect when :Replace finishes.
 
 local M = {}
@@ -17,7 +17,9 @@ function M.register_replace_finish(target_win, buf_snapshot, alias_text)
     group = group,
     callback = function(args)
       local winid = tonumber(args.match)
-      if not winid then return end
+      if not winid then
+        return
+      end
 
       -- Only react to Telescope prompt windows closing
       if api.nvim_win_is_valid(winid) then
@@ -30,10 +32,14 @@ function M.register_replace_finish(target_win, buf_snapshot, alias_text)
       -- One-shot: remove immediately
       pcall(api.nvim_del_augroup_by_id, group)
 
-      if not api.nvim_win_is_valid(target_win) then return end
+      if not api.nvim_win_is_valid(target_win) then
+        return
+      end
 
       local buf = api.nvim_win_get_buf(target_win)
-      if not api.nvim_buf_is_valid(buf) then return end
+      if not api.nvim_buf_is_valid(buf) then
+        return
+      end
 
       -- Compare snapshot with current lines to determine if Replace ran
       local new_lines = api.nvim_buf_get_lines(buf, 0, -1, false)

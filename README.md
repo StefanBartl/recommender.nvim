@@ -11,9 +11,10 @@
 ![version](https://img.shields.io/badge/version-0.1.0-blue.svg)
 ![Neovim](https://img.shields.io/badge/Neovim-0.9%2B-success.svg)
 ![Lua](https://img.shields.io/badge/language-Lua-yellow.svg)
-![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 Analyzes the current Lua buffer for frequently repeated dotted chains (`vim.api`, `table.insert`, …) and suggests `local` alias declarations in an interactive floating window. Pure Neovim — no external dependencies.
+
+> Pairs well with [replacer.nvim](https://github.com/StefanBartl/replacer.nvim), which provides the `:Replace` command used by [replace mode](#replace-mode--r----replace).
 
 ---
 
@@ -56,17 +57,23 @@ Analyzes the current Lua buffer for frequently repeated dotted chains (`vim.api`
 }
 ```
 
-### Local development
+### packer.nvim
 
 ```lua
-{
-  dir = "E:/repos/recommender.nvim",
-  ft  = { "lua" },
-  cmd = { "Recommender" },
+use {
+  "StefanBartl/recommender.nvim",
   config = function()
     require("recommender_nvim").setup()
   end,
 }
+```
+
+### vim-plug
+
+```vim
+Plug 'StefanBartl/recommender.nvim'
+
+lua require("recommender_nvim").setup()
 ```
 
 ---
@@ -104,7 +111,9 @@ require("recommender_nvim").setup({
 
 ### Default global keymaps
 
-Installed when `keymaps = true` (the default):
+Installed when `keymaps = true` (the default). which-key (if installed) labels
+the `<leader>lr` group automatically — no extra config needed. Full cheatsheet:
+[`docs/BINDINGS.md`](docs/BINDINGS.md).
 
 | Key | Command | Description |
 |-----|---------|-------------|
@@ -197,27 +206,44 @@ Press `A` to insert both aliases at once, then use your preferred replace workfl
 
 ```
 lua/recommender_nvim/
-  init.lua              setup() entry point; :Recommender command; global keymaps
-  config.lua            option merging and defaults
-  rendering.lua         float window open/close/highlight
-  keymaps.lua           buffer-local keymaps for the float
-  autocmds.lua          one-shot WinClosed hook for replace-mode finish detection
-  blacklist.lua         prefix matching + default blacklist
-  custom_aliases.lua    built-in alias map
-  analyzers/
-    regex.lua           regex-based chain counter
-    treesitter.lua      tree-sitter-based chain counter
+  init.lua                 setup() entry point
+  @types.lua               LuaLS type definitions
+  health.lua               :checkhealth recommender_nvim
+  config/
+    DEFAULTS.lua           immutable default configuration
+    init.lua               merge + access to the active config
   util/
-    notify.lua          vim.notify wrapper
+    notify.lua             prefixed vim.notify wrapper (via util/lib.lua)
+    lib.lua                soft bridge to lib.nvim (notify/map), with fallback
+  bindings/
+    init.lua               orchestrates usrcmds/keymaps/which_key/autocmds
+    usrcmds.lua             :Recommender command + per-invocation state
+    keymaps.lua             global keymaps (config.keymaps ~= false)
+    which_key.lua           optional which-key group label
+    autocmds.lua            empty (structural symmetry only)
+  float/
+    rendering.lua           float window open/close/highlight
+    keymaps.lua             buffer-local keymaps for the float
+    autocmds.lua            one-shot WinClosed hook for replace-mode finish detection
+  blacklist.lua             prefix matching + default blacklist
+  custom_aliases.lua        built-in alias map
+  analyzers/
+    regex.lua               regex-based chain counter
+    treesitter.lua          tree-sitter-based chain counter
 plugin/
-  recommender_nvim.lua  loaded-guard
+  recommender_nvim.lua          loaded-guard
+  recommender_nvim_autodoc.lua  generates doc/tags on first load if missing
 doc/
   recommender.nvim.txt  :h recommender.nvim
 ```
 
+Cheatsheet of all keymaps/commands/autocmds: [`docs/BINDINGS.md`](docs/BINDINGS.md).
+Planned/rejected features: [`docs/ROADMAP.md`](docs/ROADMAP.md).
+
 ### Design principles
 
-- **No lib.* dependencies** — fully self-contained.
+- **No hard `lib.nvim` dependency** — `util/lib.lua` uses it when present
+  (notify/map), falls back to native Neovim APIs otherwise.
 - **Lazy analyzer loading** — `treesitter.lua` is only required when first used.
 - **Per-buffer ignore state** — ignores are stored by bufnr, not globally.
 - **No deprecated API** — uses `vim.bo` / `vim.wo` throughout.
@@ -225,6 +251,8 @@ doc/
 
 ---
 
-## License
+## Health-check
 
-MIT
+```
+:checkhealth recommender_nvim
+```

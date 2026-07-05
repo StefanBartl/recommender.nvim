@@ -1,13 +1,13 @@
----@module 'recommender_nvim.keymaps'
+---@module 'recommender_nvim.float.keymaps'
 ---Buffer-local keymaps for the Recommender float window.
 
-local notify    = require("recommender_nvim.util.notify").create("[recommender_nvim]")
-local rendering = require("recommender_nvim.rendering")
+local notify = require("recommender_nvim.util.notify").create("[recommender_nvim]")
+local rendering = require("recommender_nvim.float.rendering")
 
 local M = {}
 
-local api      = vim.api
-local km_set   = vim.keymap.set
+local api = vim.api
+local km_set = vim.keymap.set
 local schedule = vim.schedule
 
 -- ── helpers ────────────────────────────────────────────────────────────────
@@ -16,11 +16,19 @@ local schedule = vim.schedule
 ---@param winid integer
 ---@return boolean
 local function is_normal_window(winid)
-  if not api.nvim_win_is_valid(winid) then return false end
+  if not api.nvim_win_is_valid(winid) then
+    return false
+  end
   local bufnr = api.nvim_win_get_buf(winid)
-  if not api.nvim_buf_is_valid(bufnr) then return false end
-  if vim.bo[bufnr].buftype ~= "" then return false end
-  if not vim.bo[bufnr].modifiable then return false end
+  if not api.nvim_buf_is_valid(bufnr) then
+    return false
+  end
+  if vim.bo[bufnr].buftype ~= "" then
+    return false
+  end
+  if not vim.bo[bufnr].modifiable then
+    return false
+  end
   return true
 end
 
@@ -32,9 +40,13 @@ local function find_target_window()
     return rendering.source_win
   end
   local alt = vim.fn.win_getid(vim.fn.winnr("#"))
-  if alt and alt ~= 0 and is_normal_window(alt) then return alt end
+  if alt and alt ~= 0 and is_normal_window(alt) then
+    return alt
+  end
   for _, win in ipairs(api.nvim_list_wins()) do
-    if is_normal_window(win) then return win end
+    if is_normal_window(win) then
+      return win
+    end
   end
   return nil
 end
@@ -50,11 +62,15 @@ end
 ---Move float cursor to the next/previous selectable line.
 ---@param delta integer  +3 or -3
 local function move(delta)
-  if not rendering.is_open() then return end
+  if not rendering.is_open() then
+    return
+  end
   local ok, cursor = pcall(api.nvim_win_get_cursor, rendering.float_win)
-  if not ok then return end
+  if not ok then
+    return
+  end
 
-  local total  = api.nvim_buf_line_count(rendering.float_buf)
+  local total = api.nvim_buf_line_count(rendering.float_buf)
   local target = cursor[1] + delta
 
   while target >= 2 and target <= total do
@@ -81,25 +97,39 @@ end
 ---@param bufnr integer
 ---@param state table  Recommender state table (visible, ignored, replace_mode, …)
 function M.attach(bufnr, state)
-  if not bufnr or not api.nvim_buf_is_valid(bufnr) then return end
+  if not bufnr or not api.nvim_buf_is_valid(bufnr) then
+    return
+  end
 
   local opts = { buffer = bufnr, silent = true, nowait = true }
 
   -- Navigation
-  km_set("n", "j",      function() move(3)  end, opts)
-  km_set("n", "k",      function() move(-3) end, opts)
-  km_set("n", "<Down>", function() move(3)  end, opts)
-  km_set("n", "<Up>",   function() move(-3) end, opts)
+  km_set("n", "j", function()
+    move(3)
+  end, opts)
+  km_set("n", "k", function()
+    move(-3)
+  end, opts)
+  km_set("n", "<Down>", function()
+    move(3)
+  end, opts)
+  km_set("n", "<Up>", function()
+    move(-3)
+  end, opts)
 
   -- Close
-  km_set("n", "q",   rendering.close, opts)
+  km_set("n", "q", rendering.close, opts)
   km_set("n", "<Esc>", rendering.close, opts)
 
   -- Insert selected alias into source buffer
   km_set("n", "<CR>", function()
-    if not rendering.is_open() then return end
+    if not rendering.is_open() then
+      return
+    end
     local item = current_item(state)
-    if not item then return end
+    if not item then
+      return
+    end
 
     local target_win = find_target_window()
     if not target_win then
@@ -111,21 +141,20 @@ function M.attach(bufnr, state)
     rendering.close()
 
     schedule(function()
-      if not api.nvim_win_is_valid(target_win) then return end
+      if not api.nvim_win_is_valid(target_win) then
+        return
+      end
       api.nvim_set_current_win(target_win)
-      vim.cmd("normal! \27")  -- ensure Normal mode
+      vim.cmd("normal! \27") -- ensure Normal mode
       vim.cmd("redraw")
 
       if state.replace_mode then
-        local buf      = api.nvim_win_get_buf(target_win)
+        local buf = api.nvim_win_get_buf(target_win)
         local snapshot = api.nvim_buf_get_lines(buf, 0, -1, false)
 
-        require("recommender_nvim.autocmds").register_replace_finish(
-          target_win, snapshot, item.alias
-        )
+        require("recommender_nvim.float.autocmds").register_replace_finish(target_win, snapshot, item.alias)
 
-        local var_name = item.alias:match("^%s*local%s+([%w_]+)")
-          or item.alias:match("^%s*([%w_]+)%s*=")
+        local var_name = item.alias:match("^%s*local%s+([%w_]+)") or item.alias:match("^%s*([%w_]+)%s*=")
 
         if var_name and vim.fn.exists(":Replace") == 2 then
           vim.cmd(("Replace %s %s %%"):format(item.chain, var_name))
@@ -142,9 +171,13 @@ function M.attach(bufnr, state)
 
   -- Yank selected alias to system clipboard without inserting or closing
   km_set("n", "y", function()
-    if not rendering.is_open() then return end
+    if not rendering.is_open() then
+      return
+    end
     local item = current_item(state)
-    if not item then return end
+    if not item then
+      return
+    end
     vim.fn.setreg("+", item.alias)
     vim.fn.setreg("*", item.alias)
     notify.info("Yanked: " .. item.alias)
@@ -152,8 +185,12 @@ function M.attach(bufnr, state)
 
   -- Insert ALL visible aliases at once into source buffer
   km_set("n", "A", function()
-    if not rendering.is_open() then return end
-    if #state.visible == 0 then return end
+    if not rendering.is_open() then
+      return
+    end
+    if #state.visible == 0 then
+      return
+    end
 
     local all_aliases = {}
     for _, item in ipairs(state.visible) do
@@ -176,9 +213,13 @@ function M.attach(bufnr, state)
 
   -- Ignore current entry for this buffer session
   km_set("n", "<BS>", function()
-    if not rendering.is_open() then return end
+    if not rendering.is_open() then
+      return
+    end
     local item = current_item(state)
-    if not item then return end
+    if not item then
+      return
+    end
 
     state.ignored[item.chain] = true
 
@@ -195,8 +236,12 @@ function M.attach(bufnr, state)
 
   -- Un-ignore all → refresh
   km_set("n", "U", function()
-    if not rendering.is_open() then return end
-    for k in pairs(state.ignored) do state.ignored[k] = nil end
+    if not rendering.is_open() then
+      return
+    end
+    for k in pairs(state.ignored) do
+      state.ignored[k] = nil
+    end
     local source_bufnr = state.source_bufnr
     if source_bufnr and api.nvim_buf_is_valid(source_bufnr) then
       schedule(function()
