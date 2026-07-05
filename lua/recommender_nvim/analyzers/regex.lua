@@ -55,14 +55,16 @@ function M.analyze(threshold, custom_aliases, bl)
         alias = ("local %s = %s"):format(custom_aliases[chain], chain)
       else
         local last = chain:match("([%w_]+)$")
-        local var  = last or chain:gsub("%.", "_")
+        local var = last or chain:gsub("%.", "_")
         alias = ("local %s = %s"):format(var, chain)
       end
       res[#res + 1] = { chain = chain, count = count, alias = alias }
     end
   end
 
-  table.sort(res, function(a, b) return a.count > b.count end)
+  table.sort(res, function(a, b)
+    return a.count > b.count
+  end)
   return res
 end
 

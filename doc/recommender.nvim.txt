@@ -18,7 +18,8 @@ CONTENTS                                        *recommender.nvim-contents*
   8. Replace mode .............. |recommender.nvim-replace-mode|
   9. Analyzers ................. |recommender.nvim-analyzers|
  10. Lua API ................... |recommender.nvim-api|
- 11. Architecture .............. |recommender.nvim-architecture|
+ 11. Health-check ............. |recommender.nvim-health|
+ 12. Architecture .............. |recommender.nvim-architecture|
 
 ==============================================================================
 1. INTRODUCTION                                   *recommender.nvim-intro*
@@ -55,15 +56,18 @@ lazy.nvim: >
     end,
   }
 <
-Local development: >
-  {
-    dir = "E:/repos/recommender.nvim",
-    ft  = { "lua" },
-    cmd = { "Recommender" },
+packer.nvim: >
+  use {
+    "StefanBartl/recommender.nvim",
     config = function()
       require("recommender_nvim").setup()
     end,
   }
+<
+vim-plug: >
+  Plug 'StefanBartl/recommender.nvim'
+
+  lua require("recommender_nvim").setup()
 <
 ==============================================================================
 4. SETUP                                          *recommender.nvim-setup*
@@ -165,7 +169,12 @@ When `true`, the following global normal-mode keymaps are installed by
   `<leader>lrt`  `:Recommender treesitter`
   `<leader>lrh`  `:Recommender regex 5`  (high threshold)
 
-Set `keymaps = false` to skip all of these and define your own.
+If which-key (https://github.com/folke/which-key.nvim) is installed, the
+`<leader>lr` prefix is automatically labeled as a group — no extra config
+needed.
+
+Set `keymaps = false` to skip all of these and define your own. Full
+cheatsheet: doc/BINDINGS.md (repo root: |recommender.nvim-architecture|).
 
 ==============================================================================
 6. COMMAND                                                    *:Recommender*
@@ -279,24 +288,47 @@ Internal modules can be imported directly if needed: >
   local suggestions = regex.analyze(3, {}, {})
 <
 ==============================================================================
-11. ARCHITECTURE                              *recommender.nvim-architecture*
+11. HEALTH-CHECK                                     *recommender.nvim-health*
+
+>
+  :checkhealth recommender_nvim
+<
+Reports Neovim version, Tree-sitter Lua parser availability, plugin-loaded
+state, optional lib.nvim / which-key detection, whether global keymaps are
+enabled, and whether a `:Replace` command is available for replace mode.
+
+==============================================================================
+12. ARCHITECTURE                              *recommender.nvim-architecture*
 
 >
   lua/recommender_nvim/
-    init.lua              setup(), :Recommender command, global keymaps
-    config.lua            option merging + defaults
-    rendering.lua         float window: open / close / highlight
-    keymaps.lua           buffer-local keymaps for the float
-    autocmds.lua          one-shot WinClosed hook (replace-mode)
-    blacklist.lua         prefix matching + default list
-    custom_aliases.lua    built-in chain → alias name map
-    analyzers/
-      regex.lua           regex-based scanner
-      treesitter.lua      Tree-sitter-based scanner
+    init.lua                 setup() entry point
+    @types.lua               LuaLS type definitions
+    health.lua               :checkhealth recommender_nvim
+    config/
+      DEFAULTS.lua           immutable default configuration
+      init.lua               merge + access to the active config
     util/
-      notify.lua          vim.notify wrapper
+      notify.lua             prefixed vim.notify wrapper (via util/lib.lua)
+      lib.lua                soft bridge to lib.nvim (notify/map), fallback
+    bindings/
+      init.lua               orchestrates usrcmds/keymaps/which_key/autocmds
+      usrcmds.lua            :Recommender command + per-invocation state
+      keymaps.lua            global keymaps (config.keymaps ~= false)
+      which_key.lua          optional which-key group label
+      autocmds.lua           empty (structural symmetry only)
+    float/
+      rendering.lua          float window: open / close / highlight
+      keymaps.lua            buffer-local keymaps for the float
+      autocmds.lua           one-shot WinClosed hook (replace-mode)
+    blacklist.lua            prefix matching + default list
+    custom_aliases.lua       built-in chain → alias name map
+    analyzers/
+      regex.lua              regex-based scanner
+      treesitter.lua         Tree-sitter-based scanner
   plugin/
-    recommender_nvim.lua  loaded-guard (vim.g.loaded_recommender_nvim)
+    recommender_nvim.lua          loaded-guard (vim.g.loaded_recommender_nvim)
+    recommender_nvim_autodoc.lua  generates doc/tags on first load if missing
 <
 ==============================================================================
 vim:ft=help:tw=78:ts=2:et:

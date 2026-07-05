@@ -21,19 +21,29 @@ end
 ---@return string[]
 local function collect_chains(bufnr, bl)
   local ok_parser, parser = pcall(ts.get_parser, bufnr, "lua")
-  if not ok_parser or not parser then return {} end
+  if not ok_parser or not parser then
+    return {}
+  end
 
   local ok_parse, trees = pcall(parser.parse, parser)
-  if not ok_parse or not trees or #trees == 0 then return {} end
+  if not ok_parse or not trees or #trees == 0 then
+    return {}
+  end
 
   local root = trees[1]:root()
-  local src   = table.concat(vim.api.nvim_buf_get_lines(bufnr, 0, -1, false), "\n")
+  local src = table.concat(vim.api.nvim_buf_get_lines(bufnr, 0, -1, false), "\n")
 
-  local ok_q, query = pcall(ts.query.parse, "lua", [[
+  local ok_q, query = pcall(
+    ts.query.parse,
+    "lua",
+    [[
     (field_expression) @field
     (call_expression function: (field_expression) @call)
-  ]])
-  if not ok_q then return {} end
+  ]]
+  )
+  if not ok_q then
+    return {}
+  end
 
   local chains = {}
   for _, match in query:iter_matches(root, bufnr) do
@@ -55,7 +65,9 @@ end
 ---@param chains string[]
 ---@return string|nil
 local function common_prefix(chains)
-  if #chains == 0 then return nil end
+  if #chains == 0 then
+    return nil
+  end
 
   local parts = vim.split(chains[1], ".", { plain = true })
   local depth = #parts
@@ -71,7 +83,9 @@ local function common_prefix(chains)
     end
   end
 
-  if depth < 2 then return nil end
+  if depth < 2 then
+    return nil
+  end
   return table.concat(parts, ".", 1, depth)
 end
 
@@ -81,7 +95,7 @@ end
 ---@param bl string[]
 ---@return {chain:string, count:integer, alias:string}[]
 function M.analyze(threshold, custom_aliases, bl)
-  local bufnr  = vim.api.nvim_get_current_buf()
+  local bufnr = vim.api.nvim_get_current_buf()
   local counts = {}
 
   for _, chain in ipairs(collect_chains(bufnr, bl)) do
@@ -95,10 +109,14 @@ function M.analyze(threshold, custom_aliases, bl)
     end
   end
 
-  if #filtered == 0 then return {} end
+  if #filtered == 0 then
+    return {}
+  end
 
   local chain_names = {}
-  for _, v in ipairs(filtered) do chain_names[#chain_names + 1] = v.chain end
+  for _, v in ipairs(filtered) do
+    chain_names[#chain_names + 1] = v.chain
+  end
   local prefix = common_prefix(chain_names)
 
   local out = {}
@@ -116,7 +134,9 @@ function M.analyze(threshold, custom_aliases, bl)
     out[#out + 1] = { chain = item.chain, count = item.count, alias = alias }
   end
 
-  table.sort(out, function(a, b) return a.count > b.count end)
+  table.sort(out, function(a, b)
+    return a.count > b.count
+  end)
   return out
 end
 
