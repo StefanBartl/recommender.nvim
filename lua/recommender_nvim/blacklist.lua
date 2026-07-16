@@ -1,5 +1,7 @@
 ---@module 'recommender_nvim.blacklist'
 
+local starts_with = require("lib.lua.strings").starts_with
+
 local M = {}
 
 ---Default blacklist entries (empty — users opt-in via setup).
@@ -15,7 +17,7 @@ function M.is_blacklisted(chain, blacklist)
     return false
   end
   for _, prefix in ipairs(blacklist) do
-    if chain:sub(1, #prefix) == prefix then
+    if starts_with(chain, prefix) then
       return true
     end
   end
