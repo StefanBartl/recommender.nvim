@@ -10,23 +10,17 @@ local M = {}
 ---@param line string
 ---@return string[]
 local function extract_chains(line)
-  local out, seen = {}, {}
+  local out = {}
 
   for c in line:gmatch("([%w_]+%.[%w_]+%.[%w_]+)") do
-    if not seen[c] then
-      out[#out + 1] = c
-      seen[c] = true
-    end
+    out[#out + 1] = c
   end
 
   for c in line:gmatch("([%w_]+%.[%w_]+)") do
-    if not seen[c] then
-      out[#out + 1] = c
-      seen[c] = true
-    end
+    out[#out + 1] = c
   end
 
-  return out
+  return require("lib.lua.tables").dedup_list(out)
 end
 
 ---Analyze the current buffer and return alias suggestions.
