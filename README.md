@@ -14,39 +14,14 @@
 
 Analyzes the current Lua buffer for frequently repeated dotted chains (`vim.api`, `table.insert`, …) and suggests `local` alias declarations in an interactive floating window. Pure Neovim — no external dependencies.
 
-> Pairs well with [replacer.nvim](https://github.com/StefanBartl/replacer.nvim), which provides the `:Replace` command used by [replace mode](#replace-mode--r----replace).
+> Pairs well with [replacer.nvim](https://github.com/StefanBartl/replacer.nvim), which provides the `:Replace` command used by [replace mode](docs/commands.md#replace-mode).
 
----
+## Quickstart
 
-## Features
-
-| Feature | Description |
-|---------|-------------|
-| **Two analyzers** | `regex` (fast, always works) and `treesitter` (precise, requires Lua parser) |
-| **Interactive float** | Navigate suggestions, insert, yank, or insert all at once |
-| **Replace mode** | After inserting an alias, auto-replaces all occurrences via `:Replace` |
-| **Per-buffer ignore** | Dismiss individual suggestions for the session without losing others |
-| **Prefix blacklist** | Block entire namespaces (`"vim.fn"` blocks all `vim.fn.*`) |
-| **Custom alias map** | Override the generated name for any chain |
-| **Syntax highlighting** | Chain, alias, and count are colored distinctly in the float |
-| **Zero global pollution** | Nothing registered globally; keymaps are opt-out |
-
----
-
-## Requirements
-
-| Tool | Required | Purpose |
-|------|----------|---------|
-| Neovim | **>= 0.9** | core |
-| Lua Tree-sitter parser | optional | needed for `analyzer = "treesitter"` |
-
----
-
-## Installation
-
-### lazy.nvim
+Requires Neovim >= 0.9 (Tree-sitter parser optional, only needed for `analyzer = "treesitter"`).
 
 ```lua
+-- lazy.nvim
 {
   "StefanBartl/recommender.nvim",
   ft  = { "lua" },
@@ -57,202 +32,20 @@ Analyzes the current Lua buffer for frequently repeated dotted chains (`vim.api`
 }
 ```
 
-### packer.nvim
-
-```lua
-use {
-  "StefanBartl/recommender.nvim",
-  config = function()
-    require("recommender_nvim").setup()
-  end,
-}
-```
-
-### vim-plug
-
 ```vim
-Plug 'StefanBartl/recommender.nvim'
-
-lua require("recommender_nvim").setup()
+:Recommender          " open with configured defaults
 ```
 
----
+See [docs/installation.md](docs/installation.md) for packer.nvim, vim-plug, and health-check verification.
 
-## Configuration
+## Documentation
 
-```lua
-require("recommender_nvim").setup({
-  -- Analyzer backend
-  analyzer = "regex",           -- "regex" | "treesitter"
-
-  -- Minimum occurrences before a chain is suggested
-  threshold = 3,
-
-  -- Chain → preferred alias name (built-in defaults shown; extend or override)
-  custom_aliases = {
-    ["vim.api"]        = "api",
-    ["vim.fn"]         = "fn",
-    ["vim.keymap.set"] = "km_set",
-    ["table.insert"]   = "tbl_insert",
-    ["string.format"]  = "str_fmt",
-    -- …
-  },
-
-  -- Prefix-matched chains that are NEVER suggested
-  blacklist = {
-    -- "vim.fn",      -- blocks vim.fn, vim.fn.expand, etc.
-    -- "table.insert",
-  },
-
-  -- Install default global keymaps (set false to manage keymaps yourself)
-  keymaps = true,
-})
-```
-
-### Default global keymaps
-
-Installed when `keymaps = true` (the default). which-key (if installed) labels
-the `<leader>lr` group automatically — no extra config needed. Full cheatsheet:
-[`docs/BINDINGS.md`](docs/BINDINGS.md).
-
-| Key | Command | Description |
-|-----|---------|-------------|
-| `<leader>lr`  | `:Recommender`              | Open with configured defaults |
-| `<leader>lR`  | `:Recommender -r`           | Open in replace mode |
-| `<leader>lrr` | `:Recommender regex`        | Force regex analyzer |
-| `<leader>lrt` | `:Recommender treesitter`   | Force treesitter analyzer |
-| `<leader>lrh` | `:Recommender regex 5`      | Regex, threshold 5 (large files) |
-
----
-
-## Usage
-
-### Command
-
-```vim
-:Recommender                       " use configured defaults
-:Recommender treesitter            " override analyzer
-:Recommender regex 5               " regex, threshold 5
-:Recommender treesitter 4 -r       " treesitter, threshold 4, replace mode
-:Recommender -r                    " replace mode with defaults
-```
-
-The command is a **toggle** — running it while the float is open closes it.
-
-Tab-completion is available for `regex`, `treesitter`, `-r`, `--replace`.
-
-### Float window keymaps
-
-| Key | Action |
-|-----|--------|
-| `j` / `↓` | Next suggestion |
-| `k` / `↑` | Previous suggestion |
-| `Enter` | Insert selected alias into source buffer |
-| `y` | Yank selected alias to system clipboard (`+`/`*`) |
-| `A` | Insert **all** visible aliases at once |
-| `Backspace` | Ignore this entry for the session |
-| `U` | Un-ignore all — restore dismissed suggestions |
-| `q` / `Esc` | Close |
-| `?` | Show keymap help |
-
----
-
-## Replace mode (`-r` / `--replace`)
-
-When replace mode is active, pressing `Enter` on a suggestion:
-
-1. Runs `:Replace <chain> <alias> %` to substitute all occurrences in the buffer.
-2. After the replace completes, inserts the `local alias = chain` declaration.
-
-**Requires** a `:Replace` user command to be available (e.g., from a surround/replace plugin).
-
-The detection of "replace finished" is event-driven — a one-shot `WinClosed` autocmd watches for the `TelescopePrompt` window closing. No polling, no timers, no race conditions.
-
----
-
-## Example
-
-**Buffer before:**
-
-```lua
-vim.api.nvim_create_user_command("Foo", function()
-  vim.api.nvim_buf_set_lines(0, 0, -1, false, {})
-  vim.api.nvim_win_set_cursor(0, { 1, 0 })
-  table.insert(results, vim.api.nvim_get_current_buf())
-  table.insert(results, vim.api.nvim_list_bufs())
-  table.insert(results, vim.api.nvim_get_current_win())
-end, {})
-```
-
-**Float shows:**
-
-```
-╭─ Recommender: 2 suggestions ──────────╮
-│                                        │
-│ → vim.api (6 hits)                     │
-│   local api = vim.api                  │
-│                                        │
-│ → table.insert (3 hits)                │
-│   local tbl_insert = table.insert      │
-│                                        │
-╰────────────────────────────────────────╯
-```
-
-Press `A` to insert both aliases at once, then use your preferred replace workflow.
-
----
-
-## Architecture
-
-```
-lua/recommender_nvim/
-  init.lua                 setup() entry point
-  @types.lua               LuaLS type definitions
-  health.lua               :checkhealth recommender_nvim
-  config/
-    DEFAULTS.lua           immutable default configuration
-    init.lua               merge + access to the active config
-  util/
-    notify.lua             prefixed vim.notify wrapper (via util/lib.lua)
-    lib.lua                soft bridge to lib.nvim (notify/map), with fallback
-  bindings/
-    init.lua               orchestrates usrcmds/keymaps/which_key/autocmds
-    usrcmds.lua             :Recommender command + per-invocation state
-    keymaps.lua             global keymaps (config.keymaps ~= false)
-    which_key.lua           optional which-key group label
-    autocmds.lua            empty (structural symmetry only)
-  float/
-    rendering.lua           float window open/close/highlight
-    keymaps.lua             buffer-local keymaps for the float
-    autocmds.lua            one-shot WinClosed hook for replace-mode finish detection
-  blacklist.lua             prefix matching + default blacklist
-  custom_aliases.lua        built-in alias map
-  analyzers/
-    regex.lua               regex-based chain counter
-    treesitter.lua          tree-sitter-based chain counter
-plugin/
-  recommender_nvim.lua          loaded-guard
-  recommender_nvim_autodoc.lua  generates doc/tags on first load if missing
-doc/
-  recommender.nvim.txt  :h recommender.nvim
-```
-
-Cheatsheet of all keymaps/commands/autocmds: [`docs/BINDINGS.md`](docs/BINDINGS.md).
-Planned/rejected features: [`docs/ROADMAP.md`](docs/ROADMAP.md).
-
-### Design principles
-
-- **No hard `lib.nvim` dependency** — `util/lib.lua` uses it when present
-  (notify/map), falls back to native Neovim APIs otherwise.
-- **Lazy analyzer loading** — `treesitter.lua` is only required when first used.
-- **Per-buffer ignore state** — ignores are stored by bufnr, not globally.
-- **No deprecated API** — uses `vim.bo` / `vim.wo` throughout.
-- **Toggle pattern** — `:Recommender` while open closes the float; no extra close command.
-
----
-
-## Health-check
-
-```
-:checkhealth recommender_nvim
-```
+- [Features](docs/features.md) — what the plugin does, at a glance.
+- [Installation](docs/installation.md) — requirements and setup for lazy.nvim, packer.nvim, and vim-plug.
+- [Configuration](docs/configuration.md) — all `setup()` options, defaults, and the default global keymaps.
+- [Commands](docs/commands.md) — the `:Recommender` command, float window keymaps, and replace mode.
+- [Examples](docs/examples.md) — a worked before/after example of the suggestion float.
+- [Architecture](docs/architecture.md) — module layout and design principles.
+- [Bindings cheatsheet](docs/BINDINGS.md) — machine-readable reference for every keymap, command, and autocommand.
+- [Roadmap](docs/ROADMAP.md) — implemented features and planned/rejected ideas.
+- [Troubleshooting](docs/troubleshooting.md) — health-check and diagnostics.
