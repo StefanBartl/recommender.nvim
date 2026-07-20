@@ -3,11 +3,12 @@
 
 local notify = require("recommender_nvim.util.notify").create("[recommender_nvim]")
 local rendering = require("recommender_nvim.float.rendering")
+local lib = require("recommender_nvim.util.lib")
 
 local M = {}
 
 local api = vim.api
-local km_set = vim.keymap.set
+local km_set = lib.map
 local schedule = vim.schedule
 
 -- ── helpers ────────────────────────────────────────────────────────────────
@@ -224,14 +225,14 @@ function M.attach(bufnr, state)
     state.ignored[item.chain] = true
 
     local source_bufnr = state.source_bufnr
-    if source_bufnr and api.nvim_buf_is_valid(source_bufnr) then
-      schedule(function()
-        api.nvim_buf_call(source_bufnr, state.refresh)
-      end)
-    else
-      notify.warn("Source buffer no longer valid")
-      rendering.close()
-    end
+    schedule(function()
+      if not (source_bufnr and api.nvim_buf_is_valid(source_bufnr)) then
+        notify.warn("Source buffer no longer valid")
+        rendering.close()
+        return
+      end
+      api.nvim_buf_call(source_bufnr, state.refresh)
+    end)
   end, opts)
 
   -- Un-ignore all → refresh
@@ -243,14 +244,14 @@ function M.attach(bufnr, state)
       state.ignored[k] = nil
     end
     local source_bufnr = state.source_bufnr
-    if source_bufnr and api.nvim_buf_is_valid(source_bufnr) then
-      schedule(function()
-        api.nvim_buf_call(source_bufnr, state.refresh)
-      end)
-    else
-      notify.warn("Source buffer no longer valid")
-      rendering.close()
-    end
+    schedule(function()
+      if not (source_bufnr and api.nvim_buf_is_valid(source_bufnr)) then
+        notify.warn("Source buffer no longer valid")
+        rendering.close()
+        return
+      end
+      api.nvim_buf_call(source_bufnr, state.refresh)
+    end)
   end, opts)
 
   -- Inline help
