@@ -23,7 +23,10 @@ Installed by `setup()` unless `config.keymaps == false` (default: enabled).
 
 ## User Commands
 
-Always defined, regardless of `config.keymaps`.
+Always defined, regardless of `config.keymaps`. Built via
+`lib.nvim.usercmd.composer` (`bindings/usrcmds.lua`) — a required
+dependency of the command layer, unlike the soft `lib.nvim.notify`/`map`
+helpers in `util/lib.lua`.
 
 | name | args | desc |
 | --- | --- | --- |

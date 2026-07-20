@@ -2,9 +2,12 @@
 ---@brief Soft, guarded bridge to the optional `lib.nvim` helper library.
 ---@description
 --- recommender.nvim prefers `lib.nvim.notify` / `lib.nvim.map` when present,
---- but must stay fully functional standalone. Every accessor here probes the
---- corresponding module with `pcall` and falls back to the native Neovim API.
---- No hard dependency is ever introduced.
+--- and every accessor here probes the corresponding module with `pcall` and
+--- falls back to the native Neovim API — no hard dependency on THESE specific
+--- helpers is ever introduced. `lib.nvim` as a whole, however, IS a hard
+--- dependency since the composer migration: `:Recommender` itself is
+--- registered via `lib.nvim.usercmd.composer` (`bindings/usrcmds.lua`), with
+--- no raw-`nvim_create_user_command` fallback. See `docs/installation.md`.
 
 local M = {}
 

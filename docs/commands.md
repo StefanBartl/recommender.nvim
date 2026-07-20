@@ -14,6 +14,11 @@ The command is a **toggle** — running it while the float is open closes it.
 
 Tab-completion is available for `regex`, `treesitter`, `-r`, `--replace`.
 
+Built via `lib.nvim.usercmd.composer`: a single flat root route (no
+subcommand word) with `-r`/`--replace` declared as a short-flag alias.
+Dispatch is unchanged; an undeclared `--flag` is now a hard error (an
+undeclared `-x` still stays a lenient positional, same as before).
+
 ## Float window keymaps
 
 | Key | Action |
