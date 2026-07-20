@@ -40,6 +40,10 @@ navigation, insert, yank, and batch-insert keymaps.
 2. REQUIREMENTS                                *recommender.nvim-requirements*
 
   * Neovim >= 0.9
+  * lib.nvim (StefanBartl/lib.nvim) — required; `:Recommender` is registered
+    via `lib.nvim.usercmd.composer`, with no fallback (`notify`/`map`
+    specifically still degrade to a native fallback if somehow absent at
+    that call site, but the command layer itself does not)
   * (optional) Lua Tree-sitter parser — only needed for `analyzer = "treesitter"`
     Install with: `:TSInstall lua`
 
@@ -49,6 +53,7 @@ navigation, insert, yank, and batch-insert keymaps.
 lazy.nvim: >
   {
     "StefanBartl/recommender.nvim",
+    dependencies = { "StefanBartl/lib.nvim" },
     ft  = { "lua" },
     cmd = { "Recommender" },
     config = function()
@@ -59,12 +64,14 @@ lazy.nvim: >
 packer.nvim: >
   use {
     "StefanBartl/recommender.nvim",
+    requires = { "StefanBartl/lib.nvim" },
     config = function()
       require("recommender_nvim").setup()
     end,
   }
 <
 vim-plug: >
+  Plug 'StefanBartl/lib.nvim'
   Plug 'StefanBartl/recommender.nvim'
 
   lua require("recommender_nvim").setup()
@@ -204,6 +211,13 @@ cheatsheet: doc/BINDINGS.md (repo root: |recommender.nvim-architecture|).
 <
   Tab-completion is available for `regex`, `treesitter`, `-r`, `--replace`.
 
+  Built via `lib.nvim.usercmd.composer`: a single flat `path = {}` root
+  route (this grammar has no subcommand word) declares `-r`/`--replace` as
+  a short-flag alias and two optional positional slots. Dispatch is
+  unchanged; an undeclared `--flag` (unlike an undeclared `-x`, which stays
+  a lenient positional) is now a hard error instead of being silently
+  treated as a no-op positional value.
+
 ==============================================================================
 7. FLOAT KEYMAPS                               *recommender.nvim-float-keymaps*
 
@@ -293,9 +307,11 @@ Internal modules can be imported directly if needed: >
 >
   :checkhealth recommender_nvim
 <
-Reports Neovim version, Tree-sitter Lua parser availability, plugin-loaded
-state, optional lib.nvim / which-key detection, whether global keymaps are
-enabled, and whether a `:Replace` command is available for replace mode.
+Reports Neovim version, lib.nvim.usercmd.composer availability (required —
+see |recommender.nvim-requirements|), Tree-sitter Lua parser availability,
+plugin-loaded state, lib.nvim.notify/which-key detection (soft, cosmetic
+only), whether global keymaps are enabled, and whether a `:Replace` command
+is available for replace mode.
 
 ==============================================================================
 12. ARCHITECTURE                              *recommender.nvim-architecture*
