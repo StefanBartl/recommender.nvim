@@ -3,5 +3,5 @@
 ## Health-check
 
 ```
-:checkhealth recommender_nvim
+:checkhealth recommender
 ```

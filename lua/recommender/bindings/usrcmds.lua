@@ -1,8 +1,8 @@
----@module 'recommender_nvim.bindings.usrcmds'
+---@module 'recommender.bindings.usrcmds'
 ---@brief The `:Recommender` user command, built via lib.nvim.usercmd.composer.
 ---@description
 --- Parses flags/positional args, resolves the analyzer + threshold, and owns
---- the per-invocation state passed to `recommender_nvim.float.keymaps`.
+--- the per-invocation state passed to `recommender.float.keymaps`.
 ---
 --- execute() is the unchanged dispatch engine (state/refresh/rendering logic
 --- untouched). The one composer route is a `path = {}` root route — this
@@ -16,9 +16,9 @@
 
 local composer = require("lib.nvim.usercmd.composer")
 
-local rendering = require("recommender_nvim.float.rendering")
-local keymaps_m = require("recommender_nvim.float.keymaps")
-local notify = require("recommender_nvim.util.notify").create("[recommender_nvim]")
+local rendering = require("recommender.float.rendering")
+local keymaps_m = require("recommender.float.keymaps")
+local notify = require("recommender.util.notify").create("[recommender]")
 
 local M = {}
 
@@ -35,10 +35,10 @@ local function get_analyzer(name)
   if _analyzer_cache[name] then
     return _analyzer_cache[name]
   end
-  local mod_name = "recommender_nvim.analyzers." .. name
+  local mod_name = "recommender.analyzers." .. name
   local ok, mod = pcall(require, mod_name)
   if not ok then
-    error(("[recommender_nvim] Unknown analyzer %q — expected 'regex' or 'treesitter'"):format(name), 2)
+    error(("[recommender] Unknown analyzer %q — expected 'regex' or 'treesitter'"):format(name), 2)
   end
   _analyzer_cache[name] = mod
   return mod

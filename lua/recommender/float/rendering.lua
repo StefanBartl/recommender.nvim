@@ -1,13 +1,13 @@
----@module 'recommender_nvim.float.rendering'
+---@module 'recommender.float.rendering'
 ---Float window: open, close, state, and syntax highlighting.
 
-local notify = require("recommender_nvim.util.notify").create("[recommender_nvim]")
+local notify = require("recommender.util.notify").create("[recommender]")
 
 local M = {}
 
 local api = vim.api
 
-local NS = api.nvim_create_namespace("recommender_nvim")
+local NS = api.nvim_create_namespace("recommender")
 
 M.float_buf = nil ---@type integer|nil
 M.float_win = nil ---@type integer|nil

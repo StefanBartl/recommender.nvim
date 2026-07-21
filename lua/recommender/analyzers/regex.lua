@@ -1,7 +1,7 @@
----@module 'recommender_nvim.analyzers.regex'
+---@module 'recommender.analyzers.regex'
 ---Regex-based Lua chain analyzer. Fast, no parser dependency.
 
-local blacklist = require("recommender_nvim.blacklist")
+local blacklist = require("recommender.blacklist")
 
 local M = {}
 

@@ -1,12 +1,12 @@
----@module 'recommender_nvim.bindings.keymaps'
+---@module 'recommender.bindings.keymaps'
 ---@brief Global keymaps installed by `setup()` unless `config.keymaps == false`.
 ---@description
 --- Maps straight onto `:Recommender` invocations — no `<Plug>` indirection.
 --- which-key (if installed) labels the `<leader>lr` prefix via
---- `recommender_nvim.bindings.which_key`; individual key descriptions come
+--- `recommender.bindings.which_key`; individual key descriptions come
 --- from each mapping's `desc`.
 
-local lib = require("recommender_nvim.util.lib")
+local lib = require("recommender.util.lib")
 
 local M = {}
 

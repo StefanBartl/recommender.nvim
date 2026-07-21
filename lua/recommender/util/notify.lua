@@ -1,8 +1,8 @@
----@module 'recommender_nvim.util.notify'
+---@module 'recommender.util.notify'
 ---@brief Prefixed notification wrapper. Delegates to `lib.nvim.notify` when
----available (see `recommender_nvim.util.lib`), else a plain `vim.notify` wrapper.
+---available (see `recommender.util.lib`), else a plain `vim.notify` wrapper.
 
-local lib = require("recommender_nvim.util.lib")
+local lib = require("recommender.util.lib")
 
 local M = {}
 

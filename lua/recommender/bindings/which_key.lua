@@ -1,4 +1,4 @@
----@module 'recommender_nvim.bindings.which_key'
+---@module 'recommender.bindings.which_key'
 ---@brief Optional, guarded which-key group label for the `<leader>lr` prefix.
 ---@description
 --- which-key is a **soft** dependency: if it is not installed this is a

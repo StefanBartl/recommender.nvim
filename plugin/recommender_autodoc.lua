@@ -1,4 +1,4 @@
----@module 'recommender_nvim.autodoc'
+---@module 'recommender.autodoc'
 --- Generates helptags for recommender.nvim if missing.
 --- This file is loaded exactly once at startup by Neovim.
 

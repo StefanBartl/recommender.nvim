@@ -1,10 +1,10 @@
 # Architecture
 
 ```
-lua/recommender_nvim/
+lua/recommender/
   init.lua                 setup() entry point
   @types.lua               LuaLS type definitions
-  health.lua               :checkhealth recommender_nvim
+  health.lua               :checkhealth recommender
   config/
     DEFAULTS.lua           immutable default configuration
     init.lua               merge + access to the active config
@@ -27,8 +27,8 @@ lua/recommender_nvim/
     regex.lua               regex-based chain counter
     treesitter.lua          tree-sitter-based chain counter
 plugin/
-  recommender_nvim.lua          loaded-guard
-  recommender_nvim_autodoc.lua  generates doc/tags on first load if missing
+  recommender.lua          loaded-guard
+  recommender_autodoc.lua  generates doc/tags on first load if missing
 doc/
   recommender.nvim.txt  :h recommender.nvim
 ```

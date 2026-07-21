@@ -1,4 +1,4 @@
----@module 'recommender_nvim.float.autocmds'
+---@module 'recommender.float.autocmds'
 ---Temporary autocmd used by replace-mode to detect when :Replace finishes.
 
 local M = {}

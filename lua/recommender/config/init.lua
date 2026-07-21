@@ -1,10 +1,10 @@
----@module 'recommender_nvim.config'
+---@module 'recommender.config'
 ---@brief Runtime configuration store for recommender.nvim.
 ---@description
 --- Merges user options over the immutable DEFAULTS and exposes the active
 --- config via `get()`. No global state — the active table is module-local.
 
-local DEFAULTS = require("recommender_nvim.config.DEFAULTS")
+local DEFAULTS = require("recommender.config.DEFAULTS")
 
 local M = {}
 

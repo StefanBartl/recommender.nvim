@@ -1,7 +1,7 @@
 # Configuration
 
 ```lua
-require("recommender_nvim").setup({
+require("recommender").setup({
   -- Analyzer backend
   analyzer = "regex",           -- "regex" | "treesitter"
 

@@ -1,4 +1,4 @@
----@module 'recommender_nvim'
+---@module 'recommender'
 ---recommender.nvim — Lua alias suggester for Neovim.
 ---
 ---Analyzes the current buffer for repeated dotted chains (vim.api, table.insert, …)
@@ -18,12 +18,12 @@ function M.setup(opts)
   end
   _setup_done = true
 
-  local cfg_mod = require("recommender_nvim.config")
+  local cfg_mod = require("recommender.config")
   local cfg = cfg_mod.setup(opts)
 
-  require("recommender_nvim.bindings").setup(cfg)
+  require("recommender.bindings").setup(cfg)
 
-  vim.g.loaded_recommender_nvim = 1
+  vim.g.loaded_recommender = 1
 end
 
 return M

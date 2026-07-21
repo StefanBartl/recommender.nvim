@@ -57,7 +57,7 @@ lazy.nvim: >
     ft  = { "lua" },
     cmd = { "Recommender" },
     config = function()
-      require("recommender_nvim").setup()
+      require("recommender").setup()
     end,
   }
 <
@@ -66,7 +66,7 @@ packer.nvim: >
     "StefanBartl/recommender.nvim",
     requires = { "StefanBartl/lib.nvim" },
     config = function()
-      require("recommender_nvim").setup()
+      require("recommender").setup()
     end,
   }
 <
@@ -74,14 +74,14 @@ vim-plug: >
   Plug 'StefanBartl/lib.nvim'
   Plug 'StefanBartl/recommender.nvim'
 
-  lua require("recommender_nvim").setup()
+  lua require("recommender").setup()
 <
 ==============================================================================
 4. SETUP                                          *recommender.nvim-setup*
 
 Call `setup()` once: >
 
-  require("recommender_nvim").setup({
+  require("recommender").setup({
     -- see |recommender.nvim-config|
   })
 <
@@ -141,7 +141,7 @@ The built-in default map covers common Neovim and stdlib chains. Pass your
 own table to extend or override it: >
 
   custom_aliases = vim.tbl_extend("force",
-    require("recommender_nvim.custom_aliases"),
+    require("recommender.custom_aliases"),
     { ["my.custom.chain"] = "mcc" }
   )
 <
@@ -284,28 +284,28 @@ a common prefix of depth >= 2 (e.g., `vim.api.nvim_buf_*` chains all share
 
 After `setup()`, only one public function is exposed:
 
-                                              *recommender_nvim.setup()*
-`require("recommender_nvim").setup([opts])`
+                                              *recommender.setup()*
+`require("recommender").setup([opts])`
 
   Initialize the plugin. Idempotent — safe to call multiple times (only
   the first call takes effect).
 
 Internal modules can be imported directly if needed: >
 
-  local rendering = require("recommender_nvim.rendering")
+  local rendering = require("recommender.rendering")
   rendering.close()   -- programmatically close the float
 
-  local bl = require("recommender_nvim.blacklist")
+  local bl = require("recommender.blacklist")
   bl.is_blacklisted("vim.fn.expand", { "vim.fn" })  -- true
 
-  local regex = require("recommender_nvim.analyzers.regex")
+  local regex = require("recommender.analyzers.regex")
   local suggestions = regex.analyze(3, {}, {})
 <
 ==============================================================================
 11. HEALTH-CHECK                                     *recommender.nvim-health*
 
 >
-  :checkhealth recommender_nvim
+  :checkhealth recommender
 <
 Reports Neovim version, lib.nvim.usercmd.composer availability (required —
 see |recommender.nvim-requirements|), Tree-sitter Lua parser availability,
@@ -317,10 +317,10 @@ is available for replace mode.
 12. ARCHITECTURE                              *recommender.nvim-architecture*
 
 >
-  lua/recommender_nvim/
+  lua/recommender/
     init.lua                 setup() entry point
     @types.lua               LuaLS type definitions
-    health.lua               :checkhealth recommender_nvim
+    health.lua               :checkhealth recommender
     config/
       DEFAULTS.lua           immutable default configuration
       init.lua               merge + access to the active config
@@ -343,8 +343,8 @@ is available for replace mode.
       regex.lua              regex-based scanner
       treesitter.lua         Tree-sitter-based scanner
   plugin/
-    recommender_nvim.lua          loaded-guard (vim.g.loaded_recommender_nvim)
-    recommender_nvim_autodoc.lua  generates doc/tags on first load if missing
+    recommender.lua          loaded-guard (vim.g.loaded_recommender)
+    recommender_autodoc.lua  generates doc/tags on first load if missing
 <
 ==============================================================================
 vim:ft=help:tw=78:ts=2:et:
