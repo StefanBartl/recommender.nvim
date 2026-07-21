@@ -1,7 +1,7 @@
----@module 'recommender_nvim.analyzers.treesitter'
+---@module 'recommender.analyzers.treesitter'
 ---Tree-sitter-based Lua chain analyzer. More precise than regex; requires the Lua parser.
 
-local blacklist = require("recommender_nvim.blacklist")
+local blacklist = require("recommender.blacklist")
 
 local M = {}
 

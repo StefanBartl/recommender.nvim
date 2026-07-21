@@ -1,4 +1,4 @@
----@module 'recommender_nvim.blacklist'
+---@module 'recommender.blacklist'
 
 local starts_with = require("lib.lua.strings").starts_with
 

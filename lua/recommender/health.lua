@@ -1,11 +1,11 @@
----@module 'recommender_nvim.health'
----@brief :checkhealth recommender_nvim provider.
+---@module 'recommender.health'
+---@brief :checkhealth recommender provider.
 
 local M = {}
 
 ---@return nil
 function M.check()
-  vim.health.start("recommender_nvim")
+  vim.health.start("recommender")
 
   if vim.fn.has("nvim-0.9") == 1 then
     vim.health.ok("Neovim >= 0.9")
@@ -29,25 +29,25 @@ function M.check()
     vim.health.info('Lua Tree-sitter parser not found — install with :TSInstall lua to use analyzer = "treesitter"')
   end
 
-  if vim.g.loaded_recommender_nvim then
-    vim.health.ok("plugin loaded (vim.g.loaded_recommender_nvim = " .. tostring(vim.g.loaded_recommender_nvim) .. ")")
+  if vim.g.loaded_recommender then
+    vim.health.ok("plugin loaded (vim.g.loaded_recommender = " .. tostring(vim.g.loaded_recommender) .. ")")
   else
-    vim.health.warn("plugin guard not set — call require('recommender_nvim').setup()")
+    vim.health.warn("plugin guard not set — call require('recommender').setup()")
   end
 
-  if require("recommender_nvim.util.lib").available() then
+  if require("recommender.util.lib").available() then
     vim.health.ok("lib.nvim found (notify/map delegate to it)")
   else
     vim.health.info("lib.nvim.notify not found — native vim.notify/vim.keymap.set fallback used for notify/map specifically (lib.nvim itself is still required overall, see above)")
   end
 
-  if require("recommender_nvim.bindings.which_key").available() then
+  if require("recommender.bindings.which_key").available() then
     vim.health.ok("which-key found (global keymaps get a labeled <leader>lr group)")
   else
     vim.health.info("which-key not installed (optional; only labels the <leader>lr group)")
   end
 
-  local cfg = require("recommender_nvim.config").get()
+  local cfg = require("recommender.config").get()
   if cfg.keymaps ~= false then
     vim.health.ok("keymaps enabled (default) — <leader>lr, <leader>lR, <leader>lrr, <leader>lrt, <leader>lrh bound")
   else

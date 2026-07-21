@@ -17,7 +17,7 @@
 - `bindings/` module (usrcmds/keymaps/which_key/autocmds) with opt-out
   global keymaps (`config.keymaps = false`) and which-key group label
 - `config/DEFAULTS.lua` config system, idempotent `setup()`
-- `:checkhealth recommender_nvim`
+- `:checkhealth recommender`
 - No hard `lib.nvim` dependency (optional soft bridge for notify/map)
 - `docs/BINDINGS.md` cheatsheet
 

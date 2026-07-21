@@ -1,4 +1,4 @@
----@module 'recommender_nvim.config.DEFAULTS'
+---@module 'recommender.config.DEFAULTS'
 ---@brief Immutable default configuration for recommender.nvim.
 ---@description
 --- Single source of truth. `config/init.lua` deep-merges user options over a
@@ -8,8 +8,8 @@
 local DEFAULTS = {
   analyzer = "regex",
   threshold = 3,
-  custom_aliases = require("recommender_nvim.custom_aliases"),
-  blacklist = require("recommender_nvim.blacklist").default,
+  custom_aliases = require("recommender.custom_aliases"),
+  blacklist = require("recommender.blacklist").default,
   keymaps = true,
 }
 

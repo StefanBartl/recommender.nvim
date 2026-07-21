@@ -1,4 +1,4 @@
----@module 'recommender_nvim.util.lib'
+---@module 'recommender.util.lib'
 ---@brief Soft, guarded bridge to the optional `lib.nvim` helper library.
 ---@description
 --- recommender.nvim prefers `lib.nvim.notify` / `lib.nvim.map` when present,
@@ -47,7 +47,7 @@ function M.notifier(prefix)
       emit(msg, vim.log.levels.ERROR)
     end,
     debug = function(msg)
-      if vim.g.recommender_nvim_debug then
+      if vim.g.recommender_debug then
         emit(msg, vim.log.levels.DEBUG)
       end
     end,

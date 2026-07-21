@@ -1,5 +1,5 @@
 ---@meta
----@module 'recommender_nvim.@types'
+---@module 'recommender.@types'
 ---@brief Type definitions for recommender.nvim.
 ---@description
 --- Central type catalog so the source files stay free of long annotation

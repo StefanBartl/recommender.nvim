@@ -2,7 +2,7 @@
 
 Machine-readable overview of every keymap, user command, and autocommand
 defined by `recommender.nvim`. This file is documentation only and mirrors
-the source of truth in `lua/recommender_nvim/bindings/`. Any change there
+the source of truth in `lua/recommender/bindings/`. Any change there
 must be reflected here.
 
 Every global mapping binds directly onto `:Recommender` — there is no
@@ -36,7 +36,7 @@ Tab completion offers `regex`, `treesitter`, `-r`, `--replace` in any order.
 
 ## Float Window Keymaps
 
-Buffer-local to the float window (`lua/recommender_nvim/float/keymaps.lua`),
+Buffer-local to the float window (`lua/recommender/float/keymaps.lua`),
 attached each time the float opens.
 
 | lhs | action |
@@ -53,11 +53,11 @@ attached each time the float opens.
 
 ## Autocommands
 
-No plugin-level autocommands — `lua/recommender_nvim/bindings/autocmds.lua`
+No plugin-level autocommands — `lua/recommender/bindings/autocmds.lua`
 exists only for structural symmetry with usrcmds/keymaps.
 
 Replace mode (`-r`/`--replace`) registers a **temporary, one-shot** `WinClosed`
-autocmd per invocation (`lua/recommender_nvim/float/autocmds.lua`) to detect
+autocmd per invocation (`lua/recommender/float/autocmds.lua`) to detect
 when the `:Replace` prompt closes, so the alias can be inserted right after.
 It removes itself immediately after firing — see
 [`doc/recommender.nvim.txt`](../doc/recommender.nvim.txt) section 8.

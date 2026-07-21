@@ -1,9 +1,9 @@
----@module 'recommender_nvim.float.keymaps'
+---@module 'recommender.float.keymaps'
 ---Buffer-local keymaps for the Recommender float window.
 
-local notify = require("recommender_nvim.util.notify").create("[recommender_nvim]")
-local rendering = require("recommender_nvim.float.rendering")
-local lib = require("recommender_nvim.util.lib")
+local notify = require("recommender.util.notify").create("[recommender]")
+local rendering = require("recommender.float.rendering")
+local lib = require("recommender.util.lib")
 
 local M = {}
 
@@ -153,7 +153,7 @@ function M.attach(bufnr, state)
         local buf = api.nvim_win_get_buf(target_win)
         local snapshot = api.nvim_buf_get_lines(buf, 0, -1, false)
 
-        require("recommender_nvim.float.autocmds").register_replace_finish(target_win, snapshot, item.alias)
+        require("recommender.float.autocmds").register_replace_finish(target_win, snapshot, item.alias)
 
         local var_name = item.alias:match("^%s*local%s+([%w_]+)") or item.alias:match("^%s*([%w_]+)%s*=")
 

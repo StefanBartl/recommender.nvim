@@ -28,7 +28,7 @@ Requires Neovim >= 0.9 and [lib.nvim](https://github.com/StefanBartl/lib.nvim) (
   ft  = { "lua" },
   cmd = { "Recommender" },
   config = function()
-    require("recommender_nvim").setup()
+    require("recommender").setup()
   end,
 }
 ```

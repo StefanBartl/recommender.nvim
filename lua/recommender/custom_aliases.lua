@@ -1,4 +1,4 @@
----@module 'recommender_nvim.custom_aliases'
+---@module 'recommender.custom_aliases'
 ---Built-in alias map for common Lua / Neovim chains.
 ---Users extend or override this table via setup({ custom_aliases = ... }).
 

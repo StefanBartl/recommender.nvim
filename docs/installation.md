@@ -17,7 +17,7 @@
   ft  = { "lua" },
   cmd = { "Recommender" },
   config = function()
-    require("recommender_nvim").setup()
+    require("recommender").setup()
   end,
 }
 ```
@@ -29,7 +29,7 @@ use {
   "StefanBartl/recommender.nvim",
   requires = { "StefanBartl/lib.nvim" },
   config = function()
-    require("recommender_nvim").setup()
+    require("recommender").setup()
   end,
 }
 ```
@@ -40,13 +40,13 @@ use {
 Plug 'StefanBartl/lib.nvim'
 Plug 'StefanBartl/recommender.nvim'
 
-lua require("recommender_nvim").setup()
+lua require("recommender").setup()
 ```
 
 ## Verifying the installation
 
 ```
-:checkhealth recommender_nvim
+:checkhealth recommender
 ```
 
 See [Troubleshooting](troubleshooting.md) if the health-check reports a problem.
