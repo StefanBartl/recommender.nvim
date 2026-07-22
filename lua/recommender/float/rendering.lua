@@ -63,18 +63,18 @@ local function apply_highlights(buf, suggestions, lines)
     local chain_line = lines[chain_row + 1] -- lines is 1-indexed
 
     -- "→" arrow (3 UTF-8 bytes)
-    api.nvim_buf_add_highlight(buf, NS, "Special", chain_row, 0, 3)
+    vim.hl.range(buf, NS, "Special", { chain_row, 0 }, { chain_row, 3 })
     -- chain name: after "→ " (byte 4 onwards)
     local paren_byte = chain_line:find(" %(") -- 1-based byte position
     if paren_byte then
-      api.nvim_buf_add_highlight(buf, NS, "Identifier", chain_row, 4, paren_byte - 1)
-      api.nvim_buf_add_highlight(buf, NS, "Comment", chain_row, paren_byte - 1, -1)
+      vim.hl.range(buf, NS, "Identifier", { chain_row, 4 }, { chain_row, paren_byte - 1 })
+      vim.hl.range(buf, NS, "Comment", { chain_row, paren_byte - 1 }, { chain_row, -1 })
     else
-      api.nvim_buf_add_highlight(buf, NS, "Identifier", chain_row, 4, -1)
+      vim.hl.range(buf, NS, "Identifier", { chain_row, 4 }, { chain_row, -1 })
     end
 
     -- alias line: full line as Statement
-    api.nvim_buf_add_highlight(buf, NS, "Statement", alias_row, 0, -1)
+    vim.hl.range(buf, NS, "Statement", { alias_row, 0 }, { alias_row, -1 })
   end
 end
 
