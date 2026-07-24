@@ -11,6 +11,10 @@ local DEFAULTS = {
   custom_aliases = require("recommender.custom_aliases"),
   blacklist = require("recommender.blacklist").default,
   keymaps = true,
+  -- Directory names skipped (at any depth) during `:Recommender --cwd` scans.
+  cwd_ignore = { ".git", "node_modules", ".venv", "venv", "__pycache__", "dist", "build", ".next", "target", ".tox" },
+  -- Safety cap on the number of files a `--cwd` scan reads; 0 = unbounded.
+  cwd_max_files = 500,
 }
 
 return DEFAULTS

@@ -12,7 +12,7 @@
 ![Neovim](https://img.shields.io/badge/Neovim-0.9%2B-success.svg)
 ![Lua](https://img.shields.io/badge/language-Lua-yellow.svg)
 
-Analyzes the current Lua buffer for frequently repeated dotted chains (`vim.api`, `table.insert`, …) and suggests `local` alias declarations in an interactive floating window. Pure Neovim — no external tooling. Requires [lib.nvim](https://github.com/StefanBartl/lib.nvim): `:Recommender` is registered via `lib.nvim.usercmd.composer`.
+Analyzes the current buffer — or the whole project with `-c`/`--cwd` — for frequently repeated dotted chains (`vim.api`, `table.insert`, …) in Lua, JS/TS, or Python, and suggests alias declarations in an interactive floating window. Pure Neovim — no external tooling. Requires [lib.nvim](https://github.com/StefanBartl/lib.nvim): `:Recommender` is registered via `lib.nvim.usercmd.composer`.
 
 > Pairs well with [replacer.nvim](https://github.com/StefanBartl/replacer.nvim), which provides the `:Replace` command used by [replace mode](docs/commands.md#replace-mode).
 

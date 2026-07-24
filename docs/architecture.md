@@ -23,6 +23,7 @@ lua/recommender/
     autocmds.lua            one-shot WinClosed hook for replace-mode finish detection
   blacklist.lua             prefix matching + default blacklist
   custom_aliases.lua        built-in alias map
+  project.lua               cwd file discovery for -c/--cwd scope
   analyzers/
     regex.lua               regex-based chain counter (Lua)
     treesitter.lua          tree-sitter-based chain counter (Lua)
