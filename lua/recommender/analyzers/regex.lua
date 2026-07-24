@@ -23,15 +23,17 @@ local function extract_chains(line)
   return require("lib.lua.tables").dedup_list(out)
 end
 
----Analyze the current buffer and return alias suggestions.
+---Analyze a buffer (or an explicit line list) and return alias suggestions.
 ---@param threshold integer
 ---@param custom_aliases table<string,string>
 ---@param bl string[]
+---@param lines string[]|nil  Explicit lines to scan (e.g. concatenated project
+---                            files for cwd scope); defaults to the current
+---                            buffer's lines when omitted.
 ---@return {chain:string, count:integer, alias:string}[]
-function M.analyze(threshold, custom_aliases, bl)
-  local api = vim.api
+function M.analyze(threshold, custom_aliases, bl, lines)
   local counts = {}
-  local lines = api.nvim_buf_get_lines(0, 0, -1, false)
+  lines = lines or vim.api.nvim_buf_get_lines(0, 0, -1, false)
 
   for _, line in ipairs(lines) do
     for _, chain in ipairs(extract_chains(line)) do

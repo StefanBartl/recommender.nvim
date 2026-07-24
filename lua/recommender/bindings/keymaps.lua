@@ -20,6 +20,7 @@ function M.bind()
   lib.map("n", "<leader>lrj", "<cmd>Recommender javascript<cr>", { desc = "Recommender (javascript)" })
   lib.map("n", "<leader>lrp", "<cmd>Recommender python<cr>", { desc = "Recommender (python)" })
   lib.map("n", "<leader>lrh", "<cmd>Recommender regex 5<cr>", { desc = "Recommender (high threshold)" })
+  lib.map("n", "<leader>lrc", "<cmd>Recommender -c<cr>", { desc = "Recommender (project-wide, cwd)" })
 end
 
 return M

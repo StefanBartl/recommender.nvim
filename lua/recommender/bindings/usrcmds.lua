@@ -4,20 +4,22 @@
 --- Parses flags/positional args, resolves the analyzer + threshold, and owns
 --- the per-invocation state passed to `recommender.float.keymaps`.
 ---
---- execute() is the unchanged dispatch engine (state/refresh/rendering logic
---- untouched). The one composer route is a `path = {}` root route — this
---- grammar has no subcommand word at all — declaring `flags = {{name=
---- "replace", short="r", bool=true}}` (Phase 7's short-flag alias, added
---- specifically to unblock this repo) and two optional positional slots for
---- analyzer/threshold. Composer's flag/positional split is the same algorithm
---- the original inline loop used (strip -r/--replace tokens, keep the rest in
---- order), so ctx.flags.replace / ctx.pos feed execute() directly — no
---- reconstruction needed.
+--- execute() is the dispatch engine (state/refresh/rendering logic). The one
+--- composer route is a `path = {}` root route — this grammar has no
+--- subcommand word at all — declaring `flags = {{name="replace", short="r",
+--- bool=true}, {name="cwd", short="c", bool=true}}` (Phase 7's short-flag
+--- alias, added specifically to unblock this repo) and two optional
+--- positional slots for analyzer/threshold. Composer's flag/positional split
+--- is the same algorithm the original inline loop used (strip -r/--replace
+--- tokens, keep the rest in order), so ctx.flags.replace / ctx.pos feed
+--- execute() directly — no reconstruction needed. `-c`/`--cwd` (project-wide
+--- scope, see `recommender.project`) follows the same short-flag pattern.
 
 local composer = require("lib.nvim.usercmd.composer")
 
 local rendering = require("recommender.float.rendering")
 local keymaps_m = require("recommender.float.keymaps")
+local project = require("recommender.project")
 local notify = require("recommender.util.notify").create("[recommender]")
 
 local M = {}
@@ -60,8 +62,9 @@ local ignore_by_buf = {}
 ---@param cfg Recommender.Config
 ---@param replace_mode boolean
 ---@param pos_args string[]
+---@param cwd_mode boolean
 ---@return nil
-local function execute(cfg, replace_mode, pos_args)
+local function execute(cfg, replace_mode, pos_args, cwd_mode)
   local analyzer_name = (pos_args[1] and _is_analyzer_name[pos_args[1]]) and pos_args[1] or cfg.analyzer
   local threshold = tonumber(pos_args[2]) or tonumber(pos_args[1]) or cfg.threshold
 
@@ -95,9 +98,31 @@ local function execute(cfg, replace_mode, pos_args)
       local analyzer = get_analyzer(analyzer_name)
       local all
 
-      api.nvim_buf_call(state.source_bufnr, function()
-        all = analyzer.analyze(threshold, state.custom_aliases, state.blacklist)
-      end)
+      if cwd_mode then
+        if not project.supports_cwd(analyzer_name) then
+          notify.error(("cwd scope isn't supported for analyzer %q — use regex, javascript, or python"):format(analyzer_name))
+          rendering.close()
+          return
+        end
+
+        local cwd = vim.fn.getcwd()
+        local paths, truncated = project.find_files(analyzer_name, cwd, cfg.cwd_ignore, cfg.cwd_max_files)
+        if #paths == 0 then
+          notify.info(("No matching files found under %s"):format(cwd))
+          rendering.close()
+          return
+        end
+        if truncated then
+          notify.warn(("cwd scan capped at %d files (config.cwd_max_files)"):format(cfg.cwd_max_files))
+        end
+
+        local project_lines = project.read_lines(paths)
+        all = analyzer.analyze(threshold, state.custom_aliases, state.blacklist, project_lines)
+      else
+        api.nvim_buf_call(state.source_bufnr, function()
+          all = analyzer.analyze(threshold, state.custom_aliases, state.blacklist)
+        end)
+      end
 
       state.visible = {}
       for _, s in ipairs(all) do
@@ -113,6 +138,9 @@ local function execute(cfg, replace_mode, pos_args)
       end
 
       local title = ("Recommender: %d suggestion%s"):format(#state.visible, #state.visible == 1 and "" or "s")
+      if cwd_mode then
+        title = title .. "  [PROJECT]"
+      end
       if replace_mode then
         title = title .. "  [REPLACE MODE]"
       end
@@ -137,7 +165,7 @@ end
 ---@return nil
 function M.setup(cfg)
   composer.verb("Recommender", {
-    desc = "Suggest local aliases for repeated chains. Flags: -r/--replace [analyzer] [threshold]",
+    desc = "Suggest local aliases for repeated chains. Flags: -r/--replace -c/--cwd [analyzer] [threshold]",
     routes = {
       {
         path = {},
@@ -145,9 +173,12 @@ function M.setup(cfg)
           { name = "a1", type = "STRING", values = ANALYZER_NAMES, optional = true },
           { name = "a2", type = "STRING", values = ANALYZER_NAMES, optional = true },
         },
-        flags = { { name = "replace", short = "r", bool = true } },
+        flags = {
+          { name = "replace", short = "r", bool = true },
+          { name = "cwd", short = "c", bool = true },
+        },
         run = function(ctx)
-          execute(cfg, ctx.flags.replace or false, ctx.pos)
+          execute(cfg, ctx.flags.replace or false, ctx.pos, ctx.flags.cwd or false)
         end,
       },
     },

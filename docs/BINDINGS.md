@@ -22,6 +22,7 @@ Installed by `setup()` unless `config.keymaps == false` (default: enabled).
 | `<leader>lrj` | n | `:Recommender javascript`  | Force JS/TS regex analyzer |
 | `<leader>lrp` | n | `:Recommender python`      | Force Python regex analyzer |
 | `<leader>lrh` | n | `:Recommender regex 5`    | Regex, threshold 5 (large files) |
+| `<leader>lrc` | n | `:Recommender -c`          | Project-wide (cwd) scope |
 
 ## User Commands
 
@@ -32,9 +33,9 @@ helpers in `util/lib.lua`.
 
 | name | args | desc |
 | --- | --- | --- |
-| `:Recommender` | `[-r\|--replace] [regex\|treesitter\|javascript\|python] [threshold]` | Toggle the suggestion float for the current buffer |
+| `:Recommender` | `[-r\|--replace] [-c\|--cwd] [regex\|treesitter\|javascript\|python] [threshold]` | Toggle the suggestion float; `-c`/`--cwd` aggregates chain counts project-wide instead of just the current buffer (regex/javascript/python only) |
 
-Tab completion offers `regex`, `treesitter`, `javascript`, `python`, `-r`, `--replace` in any order.
+Tab completion offers `regex`, `treesitter`, `javascript`, `python`, `-r`, `--replace`, `-c`, `--cwd` in any order.
 
 ## Float Window Keymaps
 

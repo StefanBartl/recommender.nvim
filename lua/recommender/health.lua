@@ -7,6 +7,8 @@ local M = {}
 function M.check()
   vim.health.start("recommender")
 
+  local cfg = require("recommender.config").get()
+
   if vim.fn.has("nvim-0.9") == 1 then
     vim.health.ok("Neovim >= 0.9")
   else
@@ -31,6 +33,13 @@ function M.check()
 
   vim.health.ok('analyzer = "javascript" / "python" available (regex-based, no parser dependency)')
 
+  vim.health.info(
+    ("--cwd (project-wide) scope: regex/javascript/python only, not treesitter — cwd_max_files=%d, cwd_ignore=%s"):format(
+      cfg.cwd_max_files or 0,
+      table.concat(cfg.cwd_ignore or {}, ",")
+    )
+  )
+
   if vim.g.loaded_recommender then
     vim.health.ok("plugin loaded (vim.g.loaded_recommender = " .. tostring(vim.g.loaded_recommender) .. ")")
   else
@@ -49,11 +58,10 @@ function M.check()
     vim.health.info("which-key not installed (optional; only labels the <leader>lr group)")
   end
 
-  local cfg = require("recommender.config").get()
   if cfg.keymaps ~= false then
     vim.health.ok(
-      "keymaps enabled (default) — <leader>lr, <leader>lR, <leader>lrr, <leader>lrt, "
-        .. "<leader>lrj, <leader>lrp, <leader>lrh bound"
+      "keymaps enabled (default) — <leader>lr, <leader>lR, <leader>lrr, <leader>lrt, <leader>lrj, "
+        .. "<leader>lrp, <leader>lrh, <leader>lrc bound"
     )
   else
     vim.health.info("keymaps disabled (config.keymaps = false) — use :Recommender directly")
