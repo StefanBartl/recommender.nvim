@@ -54,6 +54,10 @@ attached each time the float opens.
 | `q` / `<Esc>`  | Close the float |
 | `?`            | Show this keymap reference via `vim.notify` |
 
+Navigation moves by `rendering.stride` lines (3 for `float_layout =
+"detailed"`, 1 for `"compact"` — see `lua/recommender/float/rendering.lua`);
+every keymap above works identically regardless of which layout is active.
+
 ## Autocommands
 
 No plugin-level autocommands — `lua/recommender/bindings/autocmds.lua`

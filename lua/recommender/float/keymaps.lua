@@ -53,15 +53,16 @@ local function find_target_window()
 end
 
 ---Returns true when line (1-based) is a chain header line in the float.
----Layout: line 1 = blank, then groups of 3: chain / alias / blank.
+---Layout: line 1 = blank, then groups of `rendering.stride` lines per
+---suggestion (3 for "detailed": chain / alias / blank; 1 for "compact").
 ---@param line integer
 ---@return boolean
 local function is_selectable(line)
-  return line > 1 and (line - 2) % 3 == 0
+  return line > 1 and (line - 2) % rendering.stride == 0
 end
 
 ---Move float cursor to the next/previous selectable line.
----@param delta integer  +3 or -3
+---@param delta integer  +rendering.stride or -rendering.stride
 local function move(delta)
   if not rendering.is_open() then
     return
@@ -88,7 +89,7 @@ end
 ---@param state table
 ---@return table|nil
 local function current_item(state)
-  local idx = math.floor((rendering.cursor_index - 2) / 3) + 1
+  local idx = math.floor((rendering.cursor_index - 2) / rendering.stride) + 1
   return state.visible[idx]
 end
 
@@ -106,16 +107,16 @@ function M.attach(bufnr, state)
 
   -- Navigation
   km_set("n", "j", function()
-    move(3)
+    move(rendering.stride)
   end, opts)
   km_set("n", "k", function()
-    move(-3)
+    move(-rendering.stride)
   end, opts)
   km_set("n", "<Down>", function()
-    move(3)
+    move(rendering.stride)
   end, opts)
   km_set("n", "<Up>", function()
-    move(-3)
+    move(-rendering.stride)
   end, opts)
 
   -- Close

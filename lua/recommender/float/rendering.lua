@@ -13,6 +13,12 @@ M.float_buf = nil ---@type integer|nil
 M.float_win = nil ---@type integer|nil
 M.source_win = nil ---@type integer|nil
 M.cursor_index = 2 -- 1-based line, starts at first selectable entry
+---Lines occupied per suggestion for the active layout (see `open()`'s
+---`layout` param): 3 for "detailed" (chain / alias / blank), 1 for
+---"compact" (one line per suggestion, no separators). `float/keymaps.lua`
+---reads this to navigate/select regardless of which layout is active.
+---@type integer
+M.stride = 3
 
 ---@return boolean
 function M.is_open()
@@ -33,18 +39,29 @@ function M.close()
 end
 
 ---Build the display lines for a list of suggestions.
----Format per suggestion (3 lines):
+---
+---"detailed" layout (3 lines per suggestion):
 ---   → chain.name (N hits)
 ---     local alias = chain.name
 ---   (blank)
+---
+---"compact" layout (1 line per suggestion, no separators):
+---   → chain.name (N)  local alias = chain.name
 ---@param suggestions {chain:string, count:integer, alias:string}[]
+---@param layout "detailed"|"compact"
 ---@return string[]
-local function build_lines(suggestions)
+local function build_lines(suggestions, layout)
   local lines = { "" }
-  for _, s in ipairs(suggestions) do
-    lines[#lines + 1] = ("→ %s (%d hits)"):format(s.chain, s.count)
-    lines[#lines + 1] = "  " .. s.alias
-    lines[#lines + 1] = ""
+  if layout == "compact" then
+    for _, s in ipairs(suggestions) do
+      lines[#lines + 1] = ("→ %s (%d)  %s"):format(s.chain, s.count, s.alias)
+    end
+  else
+    for _, s in ipairs(suggestions) do
+      lines[#lines + 1] = ("→ %s (%d hits)"):format(s.chain, s.count)
+      lines[#lines + 1] = "  " .. s.alias
+      lines[#lines + 1] = ""
+    end
   end
   return lines
 end
@@ -53,8 +70,35 @@ end
 ---@param buf integer
 ---@param suggestions {chain:string, count:integer, alias:string}[]
 ---@param lines string[]
-local function apply_highlights(buf, suggestions, lines)
+---@param layout "detailed"|"compact"
+local function apply_highlights(buf, suggestions, lines, layout)
   api.nvim_buf_clear_namespace(buf, NS, 0, -1)
+
+  if layout == "compact" then
+    for i = 1, #suggestions do
+      local row = i -- 0-based row index (row 0 is the leading blank line)
+      local line = lines[row + 1] -- lines is 1-indexed
+
+      -- "→" arrow (3 UTF-8 bytes)
+      vim.hl.range(buf, NS, "Special", { row, 0 }, { row, 3 })
+      -- chain name: after "→ " (byte 4 onwards), up to " ("
+      local paren_byte = line:find(" %(")
+      if not paren_byte then
+        vim.hl.range(buf, NS, "Identifier", { row, 4 }, { row, -1 })
+      else
+        vim.hl.range(buf, NS, "Identifier", { row, 4 }, { row, paren_byte - 1 })
+        local close_byte = line:find("%)", paren_byte)
+        if not close_byte then
+          vim.hl.range(buf, NS, "Comment", { row, paren_byte - 1 }, { row, -1 })
+        else
+          vim.hl.range(buf, NS, "Comment", { row, paren_byte - 1 }, { row, close_byte })
+          -- alias portion: after the "(N)  " count, to end of line
+          vim.hl.range(buf, NS, "Statement", { row, close_byte }, { row, -1 })
+        end
+      end
+    end
+    return
+  end
 
   for i = 1, #suggestions do
     local chain_row = 1 + (i - 1) * 3 -- 0-based row index
@@ -82,7 +126,8 @@ end
 ---@param suggestions {chain:string, count:integer, alias:string}[]
 ---@param title string
 ---@param restore_index integer|nil  Restore cursor to this line index
-function M.open(suggestions, title, restore_index)
+---@param layout "detailed"|"compact"|nil  Defaults to "detailed"
+function M.open(suggestions, title, restore_index, layout)
   M.source_win = api.nvim_get_current_win()
   M.close()
 
@@ -90,13 +135,16 @@ function M.open(suggestions, title, restore_index)
     return
   end
 
+  layout = (layout == "compact") and "compact" or "detailed"
+  M.stride = (layout == "compact") and 1 or 3
+
   M.float_buf = api.nvim_create_buf(false, true)
   if not M.float_buf or M.float_buf == 0 then
     notify.error("Failed to create buffer")
     return
   end
 
-  local lines = build_lines(suggestions)
+  local lines = build_lines(suggestions, layout)
 
   vim.bo[M.float_buf].buftype = "nofile"
   vim.bo[M.float_buf].bufhidden = "wipe"
@@ -144,7 +192,7 @@ function M.open(suggestions, title, restore_index)
   end
   pcall(api.nvim_win_set_cursor, M.float_win, { M.cursor_index, 0 })
 
-  apply_highlights(M.float_buf, suggestions, lines)
+  apply_highlights(M.float_buf, suggestions, lines, layout)
 end
 
 return M

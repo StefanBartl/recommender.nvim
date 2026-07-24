@@ -145,7 +145,7 @@ local function execute(cfg, replace_mode, pos_args, cwd_mode)
         title = title .. "  [REPLACE MODE]"
       end
 
-      rendering.open(state.visible, title, rendering.cursor_index)
+      rendering.open(state.visible, title, rendering.cursor_index, cfg.float_layout)
 
       if rendering.float_buf and api.nvim_buf_is_valid(rendering.float_buf) then
         keymaps_m.attach(rendering.float_buf, state)

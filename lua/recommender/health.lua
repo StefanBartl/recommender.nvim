@@ -40,6 +40,8 @@ function M.check()
     )
   )
 
+  vim.health.ok(("float_layout = %q"):format(cfg.float_layout or "detailed"))
+
   if vim.g.loaded_recommender then
     vim.health.ok("plugin loaded (vim.g.loaded_recommender = " .. tostring(vim.g.loaded_recommender) .. ")")
   else

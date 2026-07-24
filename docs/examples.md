@@ -29,3 +29,20 @@ end, {})
 ```
 
 Press `A` to insert both aliases at once, then use your preferred replace workflow.
+
+## Compact float layout
+
+Same buffer, with `float_layout = "compact"`:
+
+```
+╭─ Recommender: 2 suggestions ──────────────────────────╮
+│                                                        │
+│ → vim.api (6)  local api = vim.api                     │
+│ → table.insert (3)  local tbl_insert = table.insert    │
+╰────────────────────────────────────────────────────────╯
+```
+
+One line per suggestion instead of three — useful when `threshold` is low
+and a buffer or [project-wide scan](commands.md#project-wide--c----cwd-scope)
+surfaces many suggestions at once. Navigation (`j`/`k`) and every other float
+keymap work identically in both layouts.
