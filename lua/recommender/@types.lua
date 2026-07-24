@@ -6,7 +6,7 @@
 --- blocks. All `@types` modules return an empty table.
 
 ---@class Recommender.Config
----@field analyzer       "regex"|"treesitter"  Analyzer backend (default: "regex")
+---@field analyzer       "regex"|"treesitter"|"javascript"|"python"  Analyzer backend (default: "regex")
 ---@field threshold      integer               Min occurrences before a chain is suggested (default: 3)
 ---@field custom_aliases table<string,string>  Chain -> preferred alias name override
 ---@field blacklist      string[]              Prefix-blocked chains (never suggested)

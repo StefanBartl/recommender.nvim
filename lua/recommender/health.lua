@@ -29,6 +29,8 @@ function M.check()
     vim.health.info('Lua Tree-sitter parser not found — install with :TSInstall lua to use analyzer = "treesitter"')
   end
 
+  vim.health.ok('analyzer = "javascript" / "python" available (regex-based, no parser dependency)')
+
   if vim.g.loaded_recommender then
     vim.health.ok("plugin loaded (vim.g.loaded_recommender = " .. tostring(vim.g.loaded_recommender) .. ")")
   else
@@ -49,7 +51,10 @@ function M.check()
 
   local cfg = require("recommender.config").get()
   if cfg.keymaps ~= false then
-    vim.health.ok("keymaps enabled (default) — <leader>lr, <leader>lR, <leader>lrr, <leader>lrt, <leader>lrh bound")
+    vim.health.ok(
+      "keymaps enabled (default) — <leader>lr, <leader>lR, <leader>lrr, <leader>lrt, "
+        .. "<leader>lrj, <leader>lrp, <leader>lrh bound"
+    )
   else
     vim.health.info("keymaps disabled (config.keymaps = false) — use :Recommender directly")
   end

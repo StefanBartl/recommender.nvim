@@ -24,12 +24,22 @@ local M = {}
 
 local api = vim.api
 
+---Names accepted for `{analyzer}` positional args and `config.analyzer`.
+---@type string[]
+local ANALYZER_NAMES = { "regex", "treesitter", "javascript", "python" }
+
+---@type table<string, boolean>
+local _is_analyzer_name = {}
+for _, name in ipairs(ANALYZER_NAMES) do
+  _is_analyzer_name[name] = true
+end
+
 ---@type table<string, table>
 local _analyzer_cache = {}
 
 ---Load an analyzer backend by name, with error propagation.
 ---Results are cached so the module is only required once per session.
----@param name "regex"|"treesitter"
+---@param name "regex"|"treesitter"|"javascript"|"python"
 ---@return table
 local function get_analyzer(name)
   if _analyzer_cache[name] then
@@ -38,7 +48,7 @@ local function get_analyzer(name)
   local mod_name = "recommender.analyzers." .. name
   local ok, mod = pcall(require, mod_name)
   if not ok then
-    error(("[recommender] Unknown analyzer %q — expected 'regex' or 'treesitter'"):format(name), 2)
+    error(("[recommender] Unknown analyzer %q — expected one of: %s"):format(name, table.concat(ANALYZER_NAMES, ", ")), 2)
   end
   _analyzer_cache[name] = mod
   return mod
@@ -52,8 +62,7 @@ local ignore_by_buf = {}
 ---@param pos_args string[]
 ---@return nil
 local function execute(cfg, replace_mode, pos_args)
-  local analyzer_name = (pos_args[1] and (pos_args[1] == "regex" or pos_args[1] == "treesitter")) and pos_args[1]
-    or cfg.analyzer
+  local analyzer_name = (pos_args[1] and _is_analyzer_name[pos_args[1]]) and pos_args[1] or cfg.analyzer
   local threshold = tonumber(pos_args[2]) or tonumber(pos_args[1]) or cfg.threshold
 
   -- Toggle: close if already open
@@ -128,13 +137,13 @@ end
 ---@return nil
 function M.setup(cfg)
   composer.verb("Recommender", {
-    desc = "Suggest local aliases for repeated Lua chains. Flags: -r/--replace [analyzer] [threshold]",
+    desc = "Suggest local aliases for repeated chains. Flags: -r/--replace [analyzer] [threshold]",
     routes = {
       {
         path = {},
         args = {
-          { name = "a1", type = "STRING", values = { "regex", "treesitter" }, optional = true },
-          { name = "a2", type = "STRING", values = { "regex", "treesitter" }, optional = true },
+          { name = "a1", type = "STRING", values = ANALYZER_NAMES, optional = true },
+          { name = "a2", type = "STRING", values = ANALYZER_NAMES, optional = true },
         },
         flags = { { name = "replace", short = "r", bool = true } },
         run = function(ctx)

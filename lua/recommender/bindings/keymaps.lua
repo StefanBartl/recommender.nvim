@@ -17,6 +17,8 @@ function M.bind()
   lib.map("n", "<leader>lR", "<cmd>Recommender -r<cr>", { desc = "Recommender (replace mode)" })
   lib.map("n", "<leader>lrr", "<cmd>Recommender regex<cr>", { desc = "Recommender (regex)" })
   lib.map("n", "<leader>lrt", "<cmd>Recommender treesitter<cr>", { desc = "Recommender (treesitter)" })
+  lib.map("n", "<leader>lrj", "<cmd>Recommender javascript<cr>", { desc = "Recommender (javascript)" })
+  lib.map("n", "<leader>lrp", "<cmd>Recommender python<cr>", { desc = "Recommender (python)" })
   lib.map("n", "<leader>lrh", "<cmd>Recommender regex 5<cr>", { desc = "Recommender (high threshold)" })
 end
 
