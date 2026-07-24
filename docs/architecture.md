@@ -37,7 +37,7 @@ doc/
 ```
 
 Cheatsheet of all keymaps/commands/autocmds: [BINDINGS.md](BINDINGS.md).
-Planned/rejected features: [ROADMAP.md](ROADMAP.md).
+Roadmap (currently empty — every previously tracked idea has shipped): [ROADMAP.md](ROADMAP.md).
 
 ## Design principles
 

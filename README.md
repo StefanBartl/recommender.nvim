@@ -48,5 +48,5 @@ See [docs/installation.md](docs/installation.md) for packer.nvim, vim-plug, and 
 - [Examples](docs/examples.md) — a worked before/after example of the suggestion float.
 - [Architecture](docs/architecture.md) — module layout and design principles.
 - [Bindings cheatsheet](docs/BINDINGS.md) — machine-readable reference for every keymap, command, and autocommand.
-- [Roadmap](docs/ROADMAP.md) — implemented features and planned/rejected ideas.
+- [Roadmap](docs/ROADMAP.md) — currently empty; every previously tracked idea has shipped.
 - [Troubleshooting](docs/troubleshooting.md) — health-check and diagnostics.
