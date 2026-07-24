@@ -32,8 +32,21 @@ require("recommender").setup({
 
   -- Safety cap on files read by a `--cwd` scan (0 = unbounded)
   cwd_max_files = 500,
+
+  -- Float window layout: "detailed" (chain / alias / blank, 3 lines each)
+  -- or "compact" (one line per suggestion)
+  float_layout = "detailed",
 })
 ```
+
+## Float layout
+
+`float_layout = "detailed"` (default) shows each suggestion across 3 lines
+(chain + hit count, the alias declaration, a blank separator) — see
+[Examples](examples.md). Set `float_layout = "compact"` for one line per
+suggestion instead: `→ chain.name (N)  alias-declaration`. Both layouts
+share the same float keymaps ([Commands](commands.md#float-window-keymaps));
+`j`/`k` navigate suggestion-by-suggestion either way.
 
 ## Default global keymaps
 

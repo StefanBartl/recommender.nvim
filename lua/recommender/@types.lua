@@ -13,6 +13,7 @@
 ---@field keymaps        boolean               Install global keymaps in setup() (default: true)
 ---@field cwd_ignore     string[]              Directory names skipped (any depth) by `:Recommender --cwd`
 ---@field cwd_max_files  integer               Cap on files read by `--cwd` scans (default: 500; 0 = unbounded)
+---@field float_layout   "detailed"|"compact"  Float window layout (default: "detailed")
 
 ---@class Recommender.Suggestion
 ---@field chain string   Dotted chain, e.g. "vim.api"

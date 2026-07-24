@@ -15,6 +15,7 @@ CONTENTS                                        *recommender.nvim-contents*
      5.5 keymaps ............... |recommender.nvim-config-keymaps|
      5.6 cwd_ignore ............ |recommender.nvim-config-cwd-ignore|
      5.7 cwd_max_files ......... |recommender.nvim-config-cwd-max-files|
+     5.8 float_layout .......... |recommender.nvim-config-float-layout|
   6. Command ................... |:Recommender|
   7. Float keymaps ............. |recommender.nvim-float-keymaps|
   8. Replace mode .............. |recommender.nvim-replace-mode|
@@ -221,6 +222,24 @@ synchronous (no async job machinery in this plugin), so this bounds how long
 a project-wide invocation can take on a very large repository. If the cap is
 hit, a warning names `cwd_max_files` as the key to raise.
 
+------------------------------------------------------------------------------
+5.8 float_layout                     *recommender.nvim-config-float-layout*
+>
+  float_layout = "detailed"   -- "detailed" | "compact"
+<
+Controls how suggestions are rendered in the float window (see
+|recommender.nvim-float-keymaps|).
+
+  `"detailed"`  (default) 3 lines per suggestion: chain + hit count, the
+                alias declaration, and a blank separator.
+
+  `"compact"`   1 line per suggestion:
+                  → chain.name (N)  local alias = chain.name
+
+Every float keymap (navigation, insert, yank, ignore, …) works identically
+in both layouts — `float/keymaps.lua` reads `rendering.stride` (3 for
+detailed, 1 for compact) instead of a hardcoded line count.
+
 ==============================================================================
 6. COMMAND                                                    *:Recommender*
 
@@ -283,6 +302,11 @@ All keymaps are buffer-local to the float window.
 The "source buffer" is the buffer that was active when `:Recommender` was
 called. Insertion puts the alias on a new line at the current cursor position
 in the most recently used normal window.
+
+These keymaps behave identically regardless of `config.float_layout` (see
+|recommender.nvim-config-float-layout|) — the rendered lines differ, but
+navigation, selection, and every action above work the same in both the
+default "detailed" layout and the "compact" one.
 
 ==============================================================================
 8. REPLACE MODE                               *recommender.nvim-replace-mode*
@@ -402,9 +426,10 @@ Internal modules can be imported directly if needed: >
 Reports Neovim version, lib.nvim.usercmd.composer availability (required —
 see |recommender.nvim-requirements|), Tree-sitter Lua parser availability,
 javascript/python analyzer availability, the active `cwd_ignore`/
-`cwd_max_files` cwd-scope settings, plugin-loaded state, lib.nvim.notify/
-which-key detection (soft, cosmetic only), whether global keymaps are
-enabled, and whether a `:Replace` command is available for replace mode.
+`cwd_max_files` cwd-scope settings, the active `float_layout`, plugin-loaded
+state, lib.nvim.notify/which-key detection (soft, cosmetic only), whether
+global keymaps are enabled, and whether a `:Replace` command is available
+for replace mode.
 
 ==============================================================================
 13. ARCHITECTURE                              *recommender.nvim-architecture*
@@ -427,8 +452,8 @@ enabled, and whether a `:Replace` command is available for replace mode.
       which_key.lua          optional which-key group label
       autocmds.lua           empty (structural symmetry only)
     float/
-      rendering.lua          float window: open / close / highlight
-      keymaps.lua            buffer-local keymaps for the float
+      rendering.lua          float window: open / close / highlight; layout + stride
+      keymaps.lua            buffer-local keymaps for the float; navigates by stride
       autocmds.lua           one-shot WinClosed hook (replace-mode)
     blacklist.lua            prefix matching + default list
     custom_aliases.lua       built-in chain → alias name map

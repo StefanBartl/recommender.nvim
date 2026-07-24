@@ -10,4 +10,5 @@
 | **Prefix blacklist** | Block entire namespaces (`"vim.fn"` blocks all `vim.fn.*`) |
 | **Custom alias map** | Override the generated name for any chain |
 | **Syntax highlighting** | Chain, alias, and count are colored distinctly in the float |
+| **Configurable float layout** | `float_layout = "detailed"` (default, 3 lines/suggestion) or `"compact"` (1 line/suggestion) |
 | **Zero global pollution** | Nothing registered globally; keymaps are opt-out |
