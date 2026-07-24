@@ -98,19 +98,28 @@ All keys are optional. Unset keys use the defaults shown below.
 ------------------------------------------------------------------------------
 5.1 analyzer                           *recommender.nvim-config-analyzer*
 >
-  analyzer = "regex"   -- "regex" | "treesitter"
+  analyzer = "regex"   -- "regex" | "treesitter" | "javascript" | "python"
 <
 Controls which backend scans the buffer.
 
-  `"regex"`       Fast, pure Lua pattern matching. Works on any buffer, no
-                  parser installation required. May produce false positives
-                  inside strings or comments.
+  `"regex"`       Fast, pure Lua pattern matching over Lua chains. Works on
+                  any buffer, no parser installation required. May produce
+                  false positives inside strings or comments.
 
   `"treesitter"`  Uses the Lua Tree-sitter grammar. More precise — only
                   actual field expressions and call expressions are counted.
                   Requires `:TSInstall lua`.
 
-You can override the analyzer per invocation: `:Recommender treesitter`
+  `"javascript"`  Regex-based, for JS/TS dotted chains (`$` is treated as a
+                  valid identifier character). Suggests `const %s = %s;`.
+                  No parser dependency.
+
+  `"python"`      Regex-based, for Python dotted chains. Suggests a plain
+                  `%s = %s` assignment (Python has no `local`/`const`
+                  keyword). No parser dependency.
+
+You can override the analyzer per invocation: `:Recommender treesitter`,
+`:Recommender javascript`, `:Recommender python`
 
 ------------------------------------------------------------------------------
 5.2 threshold                          *recommender.nvim-config-threshold*
@@ -174,6 +183,8 @@ When `true`, the following global normal-mode keymaps are installed by
   `<leader>lR`   `:Recommender -r`  (replace mode)
   `<leader>lrr`  `:Recommender regex`
   `<leader>lrt`  `:Recommender treesitter`
+  `<leader>lrj`  `:Recommender javascript`
+  `<leader>lrp`  `:Recommender python`
   `<leader>lrh`  `:Recommender regex 5`  (high threshold)
 
 If which-key (https://github.com/folke/which-key.nvim) is installed, the
@@ -197,8 +208,10 @@ cheatsheet: doc/BINDINGS.md (repo root: |recommender.nvim-architecture|).
       `-r` / `--replace`    Enable replace mode (see |recommender.nvim-replace-mode|).
 
     {analyzer}
-      `regex`               Use the regex backend.
-      `treesitter`          Use the Tree-sitter backend.
+      `regex`               Use the Lua regex backend.
+      `treesitter`          Use the Lua Tree-sitter backend.
+      `javascript`          Use the JS/TS regex backend.
+      `python`              Use the Python regex backend.
 
     {threshold}
       Any positive integer. Overrides the configured threshold.
@@ -208,8 +221,11 @@ cheatsheet: doc/BINDINGS.md (repo root: |recommender.nvim-architecture|).
     :Recommender treesitter
     :Recommender regex 5
     :Recommender -r treesitter 4
+    :Recommender javascript
+    :Recommender python 4
 <
-  Tab-completion is available for `regex`, `treesitter`, `-r`, `--replace`.
+  Tab-completion is available for `regex`, `treesitter`, `javascript`,
+  `python`, `-r`, `--replace`.
 
   Built via `lib.nvim.usercmd.composer`: a single flat `path = {}` root
   route (this grammar has no subcommand word) declares `-r`/`--replace` as
@@ -279,6 +295,21 @@ Treesitter also applies a "common prefix" heuristic: if multiple chains share
 a common prefix of depth >= 2 (e.g., `vim.api.nvim_buf_*` chains all share
 `vim.api`), the alias targets the prefix rather than the full chain.
 
+------------------------------------------------------------------------------
+javascript                             *recommender.nvim-analyzer-javascript*
+
+Regex-based, for JavaScript/TypeScript buffers. Same chain-extraction
+approach as `"regex"`, but the identifier character class also accepts `$`
+(a valid character in JS/TS identifiers, e.g. jQuery-style `$el`). Suggests
+`const %s = %s;` instead of a `local` declaration.
+
+------------------------------------------------------------------------------
+python                                       *recommender.nvim-analyzer-python*
+
+Regex-based, for Python buffers. Same chain-extraction approach as
+`"regex"`. Suggests a plain `%s = %s` assignment, since Python has no
+`local`/`const` declaration keyword.
+
 ==============================================================================
 10. LUA API                                        *recommender.nvim-api*
 
@@ -340,8 +371,10 @@ is available for replace mode.
     blacklist.lua            prefix matching + default list
     custom_aliases.lua       built-in chain → alias name map
     analyzers/
-      regex.lua              regex-based scanner
-      treesitter.lua         Tree-sitter-based scanner
+      regex.lua              regex-based scanner (Lua)
+      treesitter.lua         Tree-sitter-based scanner (Lua)
+      javascript.lua         regex-based scanner (JS/TS)
+      python.lua             regex-based scanner (Python)
   plugin/
     recommender.lua          loaded-guard (vim.g.loaded_recommender)
     recommender_autodoc.lua  generates doc/tags on first load if missing

@@ -24,8 +24,10 @@ lua/recommender/
   blacklist.lua             prefix matching + default blacklist
   custom_aliases.lua        built-in alias map
   analyzers/
-    regex.lua               regex-based chain counter
-    treesitter.lua          tree-sitter-based chain counter
+    regex.lua               regex-based chain counter (Lua)
+    treesitter.lua          tree-sitter-based chain counter (Lua)
+    javascript.lua          regex-based chain counter (JS/TS)
+    python.lua              regex-based chain counter (Python)
 plugin/
   recommender.lua          loaded-guard
   recommender_autodoc.lua  generates doc/tags on first load if missing

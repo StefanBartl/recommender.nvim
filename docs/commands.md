@@ -7,12 +7,14 @@
 :Recommender treesitter            " override analyzer
 :Recommender regex 5               " regex, threshold 5
 :Recommender treesitter 4 -r       " treesitter, threshold 4, replace mode
+:Recommender javascript            " JS/TS regex analyzer
+:Recommender python 4              " Python regex analyzer, threshold 4
 :Recommender -r                    " replace mode with defaults
 ```
 
 The command is a **toggle** — running it while the float is open closes it.
 
-Tab-completion is available for `regex`, `treesitter`, `-r`, `--replace`.
+Tab-completion is available for `regex`, `treesitter`, `javascript`, `python`, `-r`, `--replace`.
 
 Built via `lib.nvim.usercmd.composer`: a single flat root route (no
 subcommand word) with `-r`/`--replace` declared as a short-flag alias.

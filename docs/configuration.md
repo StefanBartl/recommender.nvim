@@ -3,7 +3,7 @@
 ```lua
 require("recommender").setup({
   -- Analyzer backend
-  analyzer = "regex",           -- "regex" | "treesitter"
+  analyzer = "regex",           -- "regex" | "treesitter" | "javascript" | "python"
 
   -- Minimum occurrences before a chain is suggested
   threshold = 3,
@@ -41,4 +41,6 @@ the `<leader>lr` group automatically — no extra config needed. Full cheatsheet
 | `<leader>lR`  | `:Recommender -r`           | Open in replace mode |
 | `<leader>lrr` | `:Recommender regex`        | Force regex analyzer |
 | `<leader>lrt` | `:Recommender treesitter`   | Force treesitter analyzer |
+| `<leader>lrj` | `:Recommender javascript`   | Force JS/TS regex analyzer |
+| `<leader>lrp` | `:Recommender python`       | Force Python regex analyzer |
 | `<leader>lrh` | `:Recommender regex 5`      | Regex, threshold 5 (large files) |
