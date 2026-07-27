@@ -39,8 +39,14 @@ Tab completion offers `regex`, `treesitter`, `javascript`, `python`, `-r`, `--re
 
 ## Float Window Keymaps
 
-Buffer-local to the float window (`lua/recommender/float/keymaps.lua`),
-attached each time the float opens.
+The float is a `lib.nvim.ui.kit.select` picker (see
+[UI-KIT-CONCEPT.md §13b](https://github.com/StefanBartl/lib.nvim/blob/main/docs/ROADMAP/UI-KIT-CONCEPT.md)
+for the rich-item design it relies on): `j`/`k`/arrows/mouse-click
+navigation, `<CR>`-submits, and `q`/`<Esc>`-closes come from kit.select
+itself. `lua/recommender/float/keymaps.lua` supplies `<CR>`'s actual insert
+behavior (via `on_select`) and attaches the remaining actions — the ones
+that read the highlighted suggestion without submitting/closing the
+picker — as extra buffer-local keymaps each time the float opens.
 
 | lhs | action |
 | --- | --- |
@@ -54,9 +60,10 @@ attached each time the float opens.
 | `q` / `<Esc>`  | Close the float |
 | `?`            | Show this keymap reference via `vim.notify` |
 
-Navigation moves by `rendering.stride` lines (3 for `float_layout =
-"detailed"`, 1 for `"compact"` — see `lua/recommender/float/rendering.lua`);
-every keymap above works identically regardless of which layout is active.
+Navigation moves by logical suggestion regardless of layout — 3 buffer lines
+per entry for `float_layout = "detailed"`, 1 for `"compact"` (see
+`lua/recommender/float/rendering.lua`'s `build_item`); every keymap above
+works identically either way.
 
 ## Autocommands
 

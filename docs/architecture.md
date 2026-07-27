@@ -18,8 +18,8 @@ lua/recommender/
     which_key.lua           optional which-key group label
     autocmds.lua            empty (structural symmetry only)
   float/
-    rendering.lua           float window open/close/highlight; layout (detailed/compact) + stride
-    keymaps.lua             buffer-local keymaps for the float; navigates by rendering.stride
+    rendering.lua           builds lib.nvim.ui.kit.select rich items (layout: detailed/compact) + opens the picker
+    keymaps.lua             <CR>-insert handler + extra buffer-local keymaps (y/A/<BS>/U/?) on top of kit.select's own nav/close
     autocmds.lua            one-shot WinClosed hook for replace-mode finish detection
   blacklist.lua             prefix matching + default blacklist
   custom_aliases.lua        built-in alias map
