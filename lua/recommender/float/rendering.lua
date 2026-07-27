@@ -1,198 +1,100 @@
 ---@module 'recommender.float.rendering'
----Float window: open, close, state, and syntax highlighting.
+---Float window: builds `kit.select` rich items from suggestions and opens/
+---closes the picker. Navigation, the current-item highlight, multi-select,
+---and the multi-line/per-column highlighting are all handled by
+---lib.nvim.ui.kit's chooser now (see UI-KIT-CONCEPT.md §13b) -- this module
+---only builds the item list and owns the bit of state other recommender
+---modules still need (`source_win`, whether a picker is open).
 
-local notify = require("recommender.util.notify").create("[recommender]")
+local kit = require("lib.nvim.ui.kit")
 
 local M = {}
 
-local api = vim.api
-
-local NS = api.nvim_create_namespace("recommender")
-
-M.float_buf = nil ---@type integer|nil
-M.float_win = nil ---@type integer|nil
 M.source_win = nil ---@type integer|nil
-M.cursor_index = 2 -- 1-based line, starts at first selectable entry
----Lines occupied per suggestion for the active layout (see `open()`'s
----`layout` param): 3 for "detailed" (chain / alias / blank), 1 for
----"compact" (one line per suggestion, no separators). `float/keymaps.lua`
----reads this to navigate/select regardless of which layout is active.
----@type integer
-M.stride = 3
 
 ---@return boolean
 function M.is_open()
-  return M.float_win ~= nil and api.nvim_win_is_valid(M.float_win)
+  return kit.chooser.is_open()
 end
 
 function M.close()
-  if M.float_win and api.nvim_win_is_valid(M.float_win) then
-    pcall(api.nvim_win_close, M.float_win, true)
-  end
-  if M.float_buf and api.nvim_buf_is_valid(M.float_buf) then
-    pcall(api.nvim_buf_delete, M.float_buf, { force = true })
-  end
-  M.float_buf = nil
-  M.float_win = nil
-  M.source_win = nil
-  M.cursor_index = 2
+  kit.chooser.close()
 end
 
----Build the display lines for a list of suggestions.
----
----"detailed" layout (3 lines per suggestion):
----   → chain.name (N hits)
----     local alias = chain.name
----   (blank)
----
----"compact" layout (1 line per suggestion, no separators):
----   → chain.name (N)  local alias = chain.name
----@param suggestions {chain:string, count:integer, alias:string}[]
+---Build one rich `kit.select` item for a suggestion. `item.suggestion` carries
+---the original `{chain, count, alias}` back out through `on_select`/
+---`kit.chooser.current_item()`.
+---@param s {chain:string, count:integer, alias:string}
 ---@param layout "detailed"|"compact"
----@return string[]
-local function build_lines(suggestions, layout)
-  local lines = { "" }
+---@return table item  # { lines, highlights, suggestion }
+local function build_item(s, layout)
   if layout == "compact" then
-    for _, s in ipairs(suggestions) do
-      lines[#lines + 1] = ("→ %s (%d)  %s"):format(s.chain, s.count, s.alias)
-    end
-  else
-    for _, s in ipairs(suggestions) do
-      lines[#lines + 1] = ("→ %s (%d hits)"):format(s.chain, s.count)
-      lines[#lines + 1] = "  " .. s.alias
-      lines[#lines + 1] = ""
-    end
-  end
-  return lines
-end
-
----Apply syntax highlights to the float buffer.
----@param buf integer
----@param suggestions {chain:string, count:integer, alias:string}[]
----@param lines string[]
----@param layout "detailed"|"compact"
-local function apply_highlights(buf, suggestions, lines, layout)
-  api.nvim_buf_clear_namespace(buf, NS, 0, -1)
-
-  if layout == "compact" then
-    for i = 1, #suggestions do
-      local row = i -- 0-based row index (row 0 is the leading blank line)
-      local line = lines[row + 1] -- lines is 1-indexed
-
-      -- "→" arrow (3 UTF-8 bytes)
-      vim.hl.range(buf, NS, "Special", { row, 0 }, { row, 3 })
-      -- chain name: after "→ " (byte 4 onwards), up to " ("
-      local paren_byte = line:find(" %(")
-      if not paren_byte then
-        vim.hl.range(buf, NS, "Identifier", { row, 4 }, { row, -1 })
+    local line = ("→ %s (%d)  %s"):format(s.chain, s.count, s.alias)
+    local highlights = { { line = 0, col_start = 0, col_end = 3, hl_group = "Special" } }
+    local paren_byte = line:find(" %(")
+    if not paren_byte then
+      highlights[#highlights + 1] = { line = 0, col_start = 4, hl_group = "Identifier" }
+    else
+      highlights[#highlights + 1] = { line = 0, col_start = 4, col_end = paren_byte - 1, hl_group = "Identifier" }
+      local close_byte = line:find("%)", paren_byte)
+      if not close_byte then
+        highlights[#highlights + 1] = { line = 0, col_start = paren_byte - 1, hl_group = "Comment" }
       else
-        vim.hl.range(buf, NS, "Identifier", { row, 4 }, { row, paren_byte - 1 })
-        local close_byte = line:find("%)", paren_byte)
-        if not close_byte then
-          vim.hl.range(buf, NS, "Comment", { row, paren_byte - 1 }, { row, -1 })
-        else
-          vim.hl.range(buf, NS, "Comment", { row, paren_byte - 1 }, { row, close_byte })
-          -- alias portion: after the "(N)  " count, to end of line
-          vim.hl.range(buf, NS, "Statement", { row, close_byte }, { row, -1 })
-        end
+        highlights[#highlights + 1] = { line = 0, col_start = paren_byte - 1, col_end = close_byte, hl_group = "Comment" }
+        highlights[#highlights + 1] = { line = 0, col_start = close_byte, hl_group = "Statement" }
       end
     end
-    return
+    return { lines = { line }, highlights = highlights, suggestion = s }
   end
 
-  for i = 1, #suggestions do
-    local chain_row = 1 + (i - 1) * 3 -- 0-based row index
-    local alias_row = chain_row + 1
-
-    local chain_line = lines[chain_row + 1] -- lines is 1-indexed
-
-    -- "→" arrow (3 UTF-8 bytes)
-    vim.hl.range(buf, NS, "Special", { chain_row, 0 }, { chain_row, 3 })
-    -- chain name: after "→ " (byte 4 onwards)
-    local paren_byte = chain_line:find(" %(") -- 1-based byte position
-    if paren_byte then
-      vim.hl.range(buf, NS, "Identifier", { chain_row, 4 }, { chain_row, paren_byte - 1 })
-      vim.hl.range(buf, NS, "Comment", { chain_row, paren_byte - 1 }, { chain_row, -1 })
-    else
-      vim.hl.range(buf, NS, "Identifier", { chain_row, 4 }, { chain_row, -1 })
-    end
-
-    -- alias line: full line as Statement
-    vim.hl.range(buf, NS, "Statement", { alias_row, 0 }, { alias_row, -1 })
+  local chain_line = ("→ %s (%d hits)"):format(s.chain, s.count)
+  local alias_line = "  " .. s.alias
+  local highlights = { { line = 0, col_start = 0, col_end = 3, hl_group = "Special" } }
+  local paren_byte = chain_line:find(" %(")
+  if paren_byte then
+    highlights[#highlights + 1] = { line = 0, col_start = 4, col_end = paren_byte - 1, hl_group = "Identifier" }
+    highlights[#highlights + 1] = { line = 0, col_start = paren_byte - 1, hl_group = "Comment" }
+  else
+    highlights[#highlights + 1] = { line = 0, col_start = 4, hl_group = "Identifier" }
   end
+  highlights[#highlights + 1] = { line = 1, hl_group = "Statement" }
+
+  return { lines = { chain_line, alias_line, "" }, highlights = highlights, suggestion = s }
 end
 
----Open (or reopen) the float window with the given suggestions.
+---Open (or reopen) the picker with the given suggestions.
 ---@param suggestions {chain:string, count:integer, alias:string}[]
 ---@param title string
----@param restore_index integer|nil  Restore cursor to this line index
+---@param restore_index integer|nil  Restore cursor to this logical item index
 ---@param layout "detailed"|"compact"|nil  Defaults to "detailed"
-function M.open(suggestions, title, restore_index, layout)
-  M.source_win = api.nvim_get_current_win()
+---@param on_select fun(suggestion: table)  Fired on <CR> with the chosen suggestion
+---@return Lib.UI.Kit.Surface|nil surf
+function M.open(suggestions, title, restore_index, layout, on_select)
+  M.source_win = vim.api.nvim_get_current_win()
   M.close()
 
   if #suggestions == 0 then
-    return
+    return nil
   end
 
   layout = (layout == "compact") and "compact" or "detailed"
-  M.stride = (layout == "compact") and 1 or 3
 
-  M.float_buf = api.nvim_create_buf(false, true)
-  if not M.float_buf or M.float_buf == 0 then
-    notify.error("Failed to create buffer")
-    return
+  local items = {}
+  for i, s in ipairs(suggestions) do
+    items[i] = build_item(s, layout)
   end
 
-  local lines = build_lines(suggestions, layout)
-
-  vim.bo[M.float_buf].buftype = "nofile"
-  vim.bo[M.float_buf].bufhidden = "wipe"
-  vim.bo[M.float_buf].swapfile = false
-
-  api.nvim_buf_set_lines(M.float_buf, 0, -1, false, lines)
-  vim.bo[M.float_buf].modifiable = false
-
-  -- Calculate window size
-  local width = 52
-  for _, l in ipairs(lines) do
-    width = math.max(width, vim.fn.strdisplaywidth(l) + 2)
-  end
-  width = math.min(width, vim.o.columns - 8)
-  local height = math.min(#lines + 2, vim.o.lines - 8)
-
-  M.float_win = api.nvim_open_win(M.float_buf, true, {
+  return kit.select({
+    items = items,
+    title = title,
     relative = "editor",
-    row = math.floor((vim.o.lines - height) / 2),
-    col = math.floor((vim.o.columns - width) / 2),
-    width = width,
-    height = height,
-    style = "minimal",
-    border = "rounded",
-    title = " " .. title .. " ",
-    title_pos = "center",
+    initial_index = restore_index,
+    on_select = function(item)
+      if on_select then
+        on_select(item.suggestion)
+      end
+    end,
   })
-
-  if not M.float_win or M.float_win == 0 then
-    notify.error("Failed to create window")
-    M.close()
-    return
-  end
-
-  vim.wo[M.float_win].cursorline = true
-  vim.wo[M.float_win].wrap = false
-  vim.wo[M.float_win].number = false
-  vim.wo[M.float_win].relativenumber = false
-  vim.wo[M.float_win].signcolumn = "no"
-
-  -- Set cursor
-  M.cursor_index = (restore_index and restore_index >= 2) and restore_index or 2
-  if M.cursor_index > #lines then
-    M.cursor_index = 2
-  end
-  pcall(api.nvim_win_set_cursor, M.float_win, { M.cursor_index, 0 })
-
-  apply_highlights(M.float_buf, suggestions, lines, layout)
 end
 
 return M

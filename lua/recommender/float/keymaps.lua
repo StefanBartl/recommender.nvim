@@ -1,9 +1,16 @@
 ---@module 'recommender.float.keymaps'
----Buffer-local keymaps for the Recommender float window.
+---Buffer-local keymaps for the Recommender float window. Navigation
+---(j/k/arrows/mouse), <CR>-submits, and q/<Esc>-closes are handled by
+---lib.nvim.ui.kit's chooser itself now (see UI-KIT-CONCEPT.md §13b) -- this
+---module only builds the <CR> handler passed into `rendering.open()` and
+---attaches the extra actions chooser doesn't know about (y/A/<BS>/U/?),
+---which read the highlighted suggestion via `kit.chooser.current_item()`
+---without submitting/closing the picker.
 
 local notify = require("recommender.util.notify").create("[recommender]")
 local rendering = require("recommender.float.rendering")
 local lib = require("recommender.util.lib")
+local kit = require("lib.nvim.ui.kit")
 
 local M = {}
 
@@ -52,87 +59,21 @@ local function find_target_window()
   return nil
 end
 
----Returns true when line (1-based) is a chain header line in the float.
----Layout: line 1 = blank, then groups of `rendering.stride` lines per
----suggestion (3 for "detailed": chain / alias / blank; 1 for "compact").
----@param line integer
----@return boolean
-local function is_selectable(line)
-  return line > 1 and (line - 2) % rendering.stride == 0
-end
-
----Move float cursor to the next/previous selectable line.
----@param delta integer  +rendering.stride or -rendering.stride
-local function move(delta)
-  if not rendering.is_open() then
-    return
-  end
-  local ok, cursor = pcall(api.nvim_win_get_cursor, rendering.float_win)
-  if not ok then
-    return
-  end
-
-  local total = api.nvim_buf_line_count(rendering.float_buf)
-  local target = cursor[1] + delta
-
-  while target >= 2 and target <= total do
-    if is_selectable(target) then
-      pcall(api.nvim_win_set_cursor, rendering.float_win, { target, 0 })
-      rendering.cursor_index = target
-      return
-    end
-    target = target + delta
-  end
-end
-
----Get the suggestion item at the current cursor position.
----@param state table
----@return table|nil
-local function current_item(state)
-  local idx = math.floor((rendering.cursor_index - 2) / rendering.stride) + 1
-  return state.visible[idx]
+---The suggestion at the picker's current cursor position, or nil.
+---@return {chain:string, count:integer, alias:string}|nil
+local function current_suggestion()
+  local item = kit.chooser.current_item()
+  return item and item.suggestion
 end
 
 -- ── public ─────────────────────────────────────────────────────────────────
 
----Attach all buffer-local keymaps to the float buffer.
----@param bufnr integer
+---Build the <CR> handler passed to `rendering.open()`: inserts (or, in
+---replace mode, dispatches :Replace for) the chosen suggestion's alias.
 ---@param state table  Recommender state table (visible, ignored, replace_mode, …)
-function M.attach(bufnr, state)
-  if not bufnr or not api.nvim_buf_is_valid(bufnr) then
-    return
-  end
-
-  local opts = { buffer = bufnr, silent = true, nowait = true }
-
-  -- Navigation
-  km_set("n", "j", function()
-    move(rendering.stride)
-  end, opts)
-  km_set("n", "k", function()
-    move(-rendering.stride)
-  end, opts)
-  km_set("n", "<Down>", function()
-    move(rendering.stride)
-  end, opts)
-  km_set("n", "<Up>", function()
-    move(-rendering.stride)
-  end, opts)
-
-  -- Close
-  km_set("n", "q", rendering.close, opts)
-  km_set("n", "<Esc>", rendering.close, opts)
-
-  -- Insert selected alias into source buffer
-  km_set("n", "<CR>", function()
-    if not rendering.is_open() then
-      return
-    end
-    local item = current_item(state)
-    if not item then
-      return
-    end
-
+---@return fun(item: {chain:string, count:integer, alias:string})
+function M.make_on_select(state)
+  return function(item)
     local target_win = find_target_window()
     if not target_win then
       notify.warn("No suitable window for insertion")
@@ -140,7 +81,6 @@ function M.attach(bufnr, state)
     end
 
     state._pending_insert = { win = target_win, text = item.alias }
-    rendering.close()
 
     schedule(function()
       if not api.nvim_win_is_valid(target_win) then
@@ -169,14 +109,24 @@ function M.attach(bufnr, state)
         state._pending_insert = nil
       end
     end)
-  end, opts)
+  end
+end
+
+---Attach the extra buffer-local keymaps chooser doesn't provide: y (yank
+---without closing), A (insert all), <BS>/U (ignore/un-ignore + refresh in
+---place), ? (help).
+---@param bufnr integer
+---@param state table  Recommender state table (visible, ignored, replace_mode, …)
+function M.attach_extra(bufnr, state)
+  if not bufnr or not api.nvim_buf_is_valid(bufnr) then
+    return
+  end
+
+  local opts = { buffer = bufnr, silent = true, nowait = true }
 
   -- Yank selected alias to system clipboard without inserting or closing
   km_set("n", "y", function()
-    if not rendering.is_open() then
-      return
-    end
-    local item = current_item(state)
+    local item = current_suggestion()
     if not item then
       return
     end
@@ -187,9 +137,6 @@ function M.attach(bufnr, state)
 
   -- Insert ALL visible aliases at once into source buffer
   km_set("n", "A", function()
-    if not rendering.is_open() then
-      return
-    end
     if #state.visible == 0 then
       return
     end
@@ -215,16 +162,14 @@ function M.attach(bufnr, state)
 
   -- Ignore current entry for this buffer session
   km_set("n", "<BS>", function()
-    if not rendering.is_open() then
-      return
-    end
-    local item = current_item(state)
+    local item = current_suggestion()
     if not item then
       return
     end
 
     state.ignored[item.chain] = true
 
+    state._restore_index = kit.chooser.current_index()
     local source_bufnr = state.source_bufnr
     schedule(function()
       if not (source_bufnr and api.nvim_buf_is_valid(source_bufnr)) then
@@ -238,12 +183,10 @@ function M.attach(bufnr, state)
 
   -- Un-ignore all → refresh
   km_set("n", "U", function()
-    if not rendering.is_open() then
-      return
-    end
     for k in pairs(state.ignored) do
       state.ignored[k] = nil
     end
+    state._restore_index = kit.chooser.current_index()
     local source_bufnr = state.source_bufnr
     schedule(function()
       if not (source_bufnr and api.nvim_buf_is_valid(source_bufnr)) then
