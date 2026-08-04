@@ -17,10 +17,12 @@ function M.is_open()
   return kit.chooser.is_open()
 end
 
+---@return nil
 function M.close()
   kit.chooser.close()
 end
 
+---@internal
 ---Build one rich `kit.select` item for a suggestion. `item.suggestion` carries
 ---the original `{chain, count, alias}` back out through `on_select`/
 ---`kit.chooser.current_item()`.

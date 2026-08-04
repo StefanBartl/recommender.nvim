@@ -8,6 +8,7 @@ local blacklist = require("recommender.blacklist")
 
 local M = {}
 
+---@internal
 ---Extract all dotted chains from a single line.
 ---Collects 3-part chains first (e.g., console.log.bind), then 2-part.
 ---@param line string

@@ -7,6 +7,8 @@ local M = {}
 
 local ts = vim.treesitter
 
+---@internal
+---Extract the source text for a Tree-sitter node, tolerating a failed extraction.
 ---@param node TSNode
 ---@param src string
 ---@return string|nil
@@ -15,6 +17,7 @@ local function node_text(node, src)
   return ok and t or nil
 end
 
+---@internal
 ---Collect all dotted chains from the buffer via Tree-sitter.
 ---@param bufnr integer
 ---@param bl string[]
@@ -61,6 +64,7 @@ local function collect_chains(bufnr, bl)
   return chains
 end
 
+---@internal
 ---Find the longest common prefix shared by all chains (min depth 2).
 ---@param chains string[]
 ---@return string|nil

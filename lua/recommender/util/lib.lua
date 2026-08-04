@@ -11,6 +11,8 @@
 
 local M = {}
 
+---@internal
+---Require a module, tolerating its absence.
 ---@param name string
 ---@return table|nil
 local function try_require(name)
