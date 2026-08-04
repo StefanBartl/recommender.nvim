@@ -39,6 +39,7 @@ end
 ---@type table<string, table>
 local _analyzer_cache = {}
 
+---@internal
 ---Load an analyzer backend by name, with error propagation.
 ---Results are cached so the module is only required once per session.
 ---@param name "regex"|"treesitter"|"javascript"|"python"
@@ -59,6 +60,10 @@ end
 -- Per-buffer ignore state: { [bufnr] = { [chain] = true } }
 local ignore_by_buf = {}
 
+---@internal
+---Run one `:Recommender` invocation: resolve analyzer/threshold, toggle the
+---float if already open, and (re)build the per-buffer state whose `refresh()`
+---drives the suggestion list.
 ---@param cfg Recommender.Config
 ---@param replace_mode boolean
 ---@param pos_args string[]

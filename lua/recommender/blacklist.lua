@@ -1,4 +1,5 @@
 ---@module 'recommender.blacklist'
+---Prefix-based chain blocklist shared by all analyzer backends.
 
 local starts_with = require("lib.lua.strings").starts_with
 

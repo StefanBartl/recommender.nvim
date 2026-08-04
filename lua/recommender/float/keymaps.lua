@@ -20,6 +20,7 @@ local schedule = vim.schedule
 
 -- ── helpers ────────────────────────────────────────────────────────────────
 
+---@internal
 ---Returns true only for normal, modifiable, non-special windows.
 ---@param winid integer
 ---@return boolean
@@ -40,6 +41,7 @@ local function is_normal_window(winid)
   return true
 end
 
+---@internal
 ---Find the best window to insert the alias into.
 ---Priority: stored source_win → alternate window → first normal window.
 ---@return integer|nil
@@ -59,6 +61,7 @@ local function find_target_window()
   return nil
 end
 
+---@internal
 ---The suggestion at the picker's current cursor position, or nil.
 ---@return {chain:string, count:integer, alias:string}|nil
 local function current_suggestion()

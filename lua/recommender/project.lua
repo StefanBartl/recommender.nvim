@@ -30,6 +30,7 @@ function M.supports_cwd(analyzer_name)
   return EXTENSIONS[analyzer_name] ~= nil
 end
 
+---@internal
 ---Whether any path segment of `path` exactly matches an ignored name.
 ---@param path string
 ---@param ignore string[]

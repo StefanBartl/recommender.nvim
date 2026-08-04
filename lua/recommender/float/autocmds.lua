@@ -11,6 +11,7 @@ local autocmd = require("lib.nvim.autocmd")
 ---@param target_win integer  Window to insert the alias into
 ---@param buf_snapshot string[]  Buffer lines before :Replace ran
 ---@param alias_text string  Alias line to insert if the buffer changed
+---@return nil
 function M.register_replace_finish(target_win, buf_snapshot, alias_text)
   local group = autocmd.group("RecommenderNvimReplaceInsert", true)
 
