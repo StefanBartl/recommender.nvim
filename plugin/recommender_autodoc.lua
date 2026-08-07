@@ -16,6 +16,8 @@ local tags_file = doc_dir .. "/tags"
 -- Generate helptags only if necessary
 if vim.fn.isdirectory(doc_dir) == 1 and vim.fn.filereadable(tags_file) == 0 then
   vim.schedule(function()
-    pcall(function() vim.cmd("silent helptags " .. vim.fn.fnameescape(doc_dir)) end)
+    pcall(function()
+      vim.cmd("silent helptags " .. vim.fn.fnameescape(doc_dir))
+    end)
   end)
 end

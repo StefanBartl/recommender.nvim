@@ -33,7 +33,7 @@ plugin/
   recommender.lua          loaded-guard
   recommender_autodoc.lua  generates doc/tags on first load if missing
 doc/
-  recommender.nvim.txt  :h recommender.nvim
+  recommender.txt  :h recommender
 ```
 
 Cheatsheet of all keymaps/commands/autocmds: [BINDINGS.md](BINDINGS.md).

@@ -1,32 +1,35 @@
-*recommender.nvim.txt*  Lua alias suggester for Neovim.
+*recommender.txt*  Lua alias suggester for Neovim.
+
+                                                             *recommender.nvim*
+                                                             *recommender*
 
 ==============================================================================
-CONTENTS                                        *recommender.nvim-contents*
+CONTENTS                                        *recommender-contents*
 
-  1. Introduction .............. |recommender.nvim-intro|
-  2. Requirements .............. |recommender.nvim-requirements|
-  3. Installation .............. |recommender.nvim-installation|
-  4. Setup ..................... |recommender.nvim-setup|
-  5. Configuration ............. |recommender.nvim-config|
-     5.1 analyzer .............. |recommender.nvim-config-analyzer|
-     5.2 threshold ............. |recommender.nvim-config-threshold|
-     5.3 custom_aliases ........ |recommender.nvim-config-aliases|
-     5.4 blacklist ............. |recommender.nvim-config-blacklist|
-     5.5 keymaps ............... |recommender.nvim-config-keymaps|
-     5.6 cwd_ignore ............ |recommender.nvim-config-cwd-ignore|
-     5.7 cwd_max_files ......... |recommender.nvim-config-cwd-max-files|
-     5.8 float_layout .......... |recommender.nvim-config-float-layout|
+  1. Introduction .............. |recommender-intro|
+  2. Requirements .............. |recommender-requirements|
+  3. Installation .............. |recommender-installation|
+  4. Setup ..................... |recommender-setup|
+  5. Configuration ............. |recommender-config|
+     5.1 analyzer .............. |recommender-config-analyzer|
+     5.2 threshold ............. |recommender-config-threshold|
+     5.3 custom_aliases ........ |recommender-config-aliases|
+     5.4 blacklist ............. |recommender-config-blacklist|
+     5.5 keymaps ............... |recommender-config-keymaps|
+     5.6 cwd_ignore ............ |recommender-config-cwd-ignore|
+     5.7 cwd_max_files ......... |recommender-config-cwd-max-files|
+     5.8 float_layout .......... |recommender-config-float-layout|
   6. Command ................... |:Recommender|
-  7. Float keymaps ............. |recommender.nvim-float-keymaps|
-  8. Replace mode .............. |recommender.nvim-replace-mode|
-  9. Project-wide scope ........ |recommender.nvim-cwd-scope|
- 10. Analyzers ................. |recommender.nvim-analyzers|
- 11. Lua API ................... |recommender.nvim-api|
- 12. Health-check ............. |recommender.nvim-health|
- 13. Architecture .............. |recommender.nvim-architecture|
+  7. Float keymaps ............. |recommender-float-keymaps|
+  8. Replace mode .............. |recommender-replace-mode|
+  9. Project-wide scope ........ |recommender-cwd-scope|
+ 10. Analyzers ................. |recommender-analyzers|
+ 11. Lua API ................... |recommender-api|
+ 12. Health-check ............. |recommender-health|
+ 13. Architecture .............. |recommender-architecture|
 
 ==============================================================================
-1. INTRODUCTION                                   *recommender.nvim-intro*
+1. INTRODUCTION                                   *recommender-intro*
 
 recommender.nvim analyzes the current Lua buffer for dotted chains that appear
 at or above a configurable frequency threshold and suggests `local` alias
@@ -41,7 +44,7 @@ Tree-sitter-based scanner. Results are shown in a floating window with
 navigation, insert, yank, and batch-insert keymaps.
 
 ==============================================================================
-2. REQUIREMENTS                                *recommender.nvim-requirements*
+2. REQUIREMENTS                                *recommender-requirements*
 
   * Neovim >= 0.9
   * lib.nvim (StefanBartl/lib.nvim) — required; `:Recommender` is registered
@@ -52,7 +55,7 @@ navigation, insert, yank, and batch-insert keymaps.
     Install with: `:TSInstall lua`
 
 ==============================================================================
-3. INSTALLATION                                *recommender.nvim-installation*
+3. INSTALLATION                                *recommender-installation*
 
 lazy.nvim: >
   {
@@ -81,12 +84,12 @@ vim-plug: >
   lua require("recommender").setup()
 <
 ==============================================================================
-4. SETUP                                          *recommender.nvim-setup*
+4. SETUP                                          *recommender-setup*
 
 Call `setup()` once: >
 
   require("recommender").setup({
-    -- see |recommender.nvim-config|
+    -- see |recommender-config|
   })
 <
 `setup()` is idempotent — calling it twice has no effect. It registers:
@@ -95,12 +98,12 @@ Call `setup()` once: >
   * Global keymaps when `keymaps = true` (the default).
 
 ==============================================================================
-5. CONFIGURATION                                  *recommender.nvim-config*
+5. CONFIGURATION                                  *recommender-config*
 
 All keys are optional. Unset keys use the defaults shown below.
 
 ------------------------------------------------------------------------------
-5.1 analyzer                           *recommender.nvim-config-analyzer*
+5.1 analyzer                           *recommender-config-analyzer*
 >
   analyzer = "regex"   -- "regex" | "treesitter" | "javascript" | "python"
 <
@@ -126,7 +129,7 @@ You can override the analyzer per invocation: `:Recommender treesitter`,
 `:Recommender javascript`, `:Recommender python`
 
 ------------------------------------------------------------------------------
-5.2 threshold                          *recommender.nvim-config-threshold*
+5.2 threshold                          *recommender-config-threshold*
 >
   threshold = 3
 <
@@ -135,7 +138,7 @@ Lower values produce more suggestions; higher values reduce noise in large
 files. Override per invocation: `:Recommender regex 5`
 
 ------------------------------------------------------------------------------
-5.3 custom_aliases                     *recommender.nvim-config-aliases*
+5.3 custom_aliases                     *recommender-config-aliases*
 >
   custom_aliases = {
     ["vim.api"]        = "api",
@@ -159,7 +162,7 @@ own table to extend or override it: >
   )
 <
 ------------------------------------------------------------------------------
-5.4 blacklist                          *recommender.nvim-config-blacklist*
+5.4 blacklist                          *recommender-config-blacklist*
 >
   blacklist = {}   -- empty by default
 <
@@ -176,7 +179,7 @@ The blacklist is evaluated before the threshold — a chain that appears 100
 times but is blacklisted will never appear.
 
 ------------------------------------------------------------------------------
-5.5 keymaps                            *recommender.nvim-config-keymaps*
+5.5 keymaps                            *recommender-config-keymaps*
 >
   keymaps = true
 <
@@ -197,10 +200,10 @@ If which-key (https://github.com/folke/which-key.nvim) is installed, the
 needed.
 
 Set `keymaps = false` to skip all of these and define your own. Full
-cheatsheet: doc/BINDINGS.md (repo root: |recommender.nvim-architecture|).
+cheatsheet: doc/BINDINGS.md (repo root: |recommender-architecture|).
 
 ------------------------------------------------------------------------------
-5.6 cwd_ignore                       *recommender.nvim-config-cwd-ignore*
+5.6 cwd_ignore                       *recommender-config-cwd-ignore*
 >
   cwd_ignore = {
     ".git", "node_modules", ".venv", "venv", "__pycache__",
@@ -208,12 +211,12 @@ cheatsheet: doc/BINDINGS.md (repo root: |recommender.nvim-architecture|).
   }
 <
 Directory names skipped, at any depth, by a `-c`/`--cwd` scan (see
-|recommender.nvim-cwd-scope|). Matching is an exact path-segment name
+|recommender-cwd-scope|). Matching is an exact path-segment name
 comparison, not a pattern — extend the list to skip additional vendor/build
 directories specific to your projects.
 
 ------------------------------------------------------------------------------
-5.7 cwd_max_files                 *recommender.nvim-config-cwd-max-files*
+5.7 cwd_max_files                 *recommender-config-cwd-max-files*
 >
   cwd_max_files = 500   -- 0 = unbounded
 <
@@ -223,12 +226,12 @@ a project-wide invocation can take on a very large repository. If the cap is
 hit, a warning names `cwd_max_files` as the key to raise.
 
 ------------------------------------------------------------------------------
-5.8 float_layout                     *recommender.nvim-config-float-layout*
+5.8 float_layout                     *recommender-config-float-layout*
 >
   float_layout = "detailed"   -- "detailed" | "compact"
 <
 Controls how suggestions are rendered in the float window (see
-|recommender.nvim-float-keymaps|).
+|recommender-float-keymaps|).
 
   `"detailed"`  (default) 3 lines per suggestion: chain + hit count, the
                 alias declaration, and a blank separator.
@@ -251,8 +254,8 @@ detailed, 1 for compact) instead of a hardcoded line count.
   Arguments (all optional, any order for flags):
 
     {flags}
-      `-r` / `--replace`    Enable replace mode (see |recommender.nvim-replace-mode|).
-      `-c` / `--cwd`        Enable project-wide scope (see |recommender.nvim-cwd-scope|).
+      `-r` / `--replace`    Enable replace mode (see |recommender-replace-mode|).
+      `-c` / `--cwd`        Enable project-wide scope (see |recommender-cwd-scope|).
 
     {analyzer}
       `regex`               Use the Lua regex backend.
@@ -284,7 +287,7 @@ detailed, 1 for compact) instead of a hardcoded line count.
   silently treated as a no-op positional value.
 
 ==============================================================================
-7. FLOAT KEYMAPS                               *recommender.nvim-float-keymaps*
+7. FLOAT KEYMAPS                               *recommender-float-keymaps*
 
 All keymaps are buffer-local to the float window.
 
@@ -304,12 +307,12 @@ called. Insertion puts the alias on a new line at the current cursor position
 in the most recently used normal window.
 
 These keymaps behave identically regardless of `config.float_layout` (see
-|recommender.nvim-config-float-layout|) — the rendered lines differ, but
+|recommender-config-float-layout|) — the rendered lines differ, but
 navigation, selection, and every action above work the same in both the
 default "detailed" layout and the "compact" one.
 
 ==============================================================================
-8. REPLACE MODE                               *recommender.nvim-replace-mode*
+8. REPLACE MODE                               *recommender-replace-mode*
 
 Enabled with `-r` or `--replace`. When `Enter` is pressed in the float:
 
@@ -327,7 +330,7 @@ The detection mechanism is event-driven — no polling, no timers, no race
 conditions. The autocmd is removed immediately after firing.
 
 ==============================================================================
-9. PROJECT-WIDE SCOPE                              *recommender.nvim-cwd-scope*
+9. PROJECT-WIDE SCOPE                              *recommender-cwd-scope*
 
 By default `:Recommender` analyzes only the current buffer. With `-c` /
 `--cwd`, it instead scans every file under `getcwd()` matching the active
@@ -352,16 +355,16 @@ run over files on disk; combining `-c` with `treesitter` is a hard error
 naming the three supported analyzers instead.
 
 Directories are skipped by exact name match via `config.cwd_ignore` (see
-|recommender.nvim-config-cwd-ignore|), and the scan is capped at
-`config.cwd_max_files` (see |recommender.nvim-config-cwd-max-files|) files —
+|recommender-config-cwd-ignore|), and the scan is capped at
+`config.cwd_max_files` (see |recommender-config-cwd-max-files|) files —
 a warning names the config key to raise if the cap is hit. The scan is
 synchronous, matching the rest of this plugin (no async job machinery).
 
 ==============================================================================
-10. ANALYZERS                                     *recommender.nvim-analyzers*
+10. ANALYZERS                                     *recommender-analyzers*
 
 ------------------------------------------------------------------------------
-regex                                       *recommender.nvim-analyzer-regex*
+regex                                       *recommender-analyzer-regex*
 
 Scans lines with Lua string patterns. Collects 3-part chains first
 (`vim.api.nvim_*`), then 2-part (`vim.api`). Chains are deduplicated per
@@ -369,7 +372,7 @@ line. Fast; works on unsaved buffers. May count chains inside string
 literals or comments.
 
 ------------------------------------------------------------------------------
-treesitter                             *recommender.nvim-analyzer-treesitter*
+treesitter                             *recommender-analyzer-treesitter*
 
 Uses `vim.treesitter.query.parse` to find `field_expression` and
 `call_expression` nodes in the Lua grammar. Counts only syntactically valid
@@ -381,7 +384,7 @@ a common prefix of depth >= 2 (e.g., `vim.api.nvim_buf_*` chains all share
 `vim.api`), the alias targets the prefix rather than the full chain.
 
 ------------------------------------------------------------------------------
-javascript                             *recommender.nvim-analyzer-javascript*
+javascript                             *recommender-analyzer-javascript*
 
 Regex-based, for JavaScript/TypeScript buffers. Same chain-extraction
 approach as `"regex"`, but the identifier character class also accepts `$`
@@ -389,14 +392,14 @@ approach as `"regex"`, but the identifier character class also accepts `$`
 `const %s = %s;` instead of a `local` declaration.
 
 ------------------------------------------------------------------------------
-python                                       *recommender.nvim-analyzer-python*
+python                                       *recommender-analyzer-python*
 
 Regex-based, for Python buffers. Same chain-extraction approach as
 `"regex"`. Suggests a plain `%s = %s` assignment, since Python has no
 `local`/`const` declaration keyword.
 
 ==============================================================================
-11. LUA API                                        *recommender.nvim-api*
+11. LUA API                                        *recommender-api*
 
 After `setup()`, only one public function is exposed:
 
@@ -418,13 +421,13 @@ Internal modules can be imported directly if needed: >
   local suggestions = regex.analyze(3, {}, {})
 <
 ==============================================================================
-12. HEALTH-CHECK                                     *recommender.nvim-health*
+12. HEALTH-CHECK                                     *recommender-health*
 
 >
   :checkhealth recommender
 <
 Reports Neovim version, lib.nvim.usercmd.composer availability (required —
-see |recommender.nvim-requirements|), Tree-sitter Lua parser availability,
+see |recommender-requirements|), Tree-sitter Lua parser availability,
 javascript/python analyzer availability, the active `cwd_ignore`/
 `cwd_max_files` cwd-scope settings, the active `float_layout`, plugin-loaded
 state, lib.nvim.notify/which-key detection (soft, cosmetic only), whether
@@ -432,7 +435,7 @@ global keymaps are enabled, and whether a `:Replace` command is available
 for replace mode.
 
 ==============================================================================
-13. ARCHITECTURE                              *recommender.nvim-architecture*
+13. ARCHITECTURE                              *recommender-architecture*
 
 >
   lua/recommender/

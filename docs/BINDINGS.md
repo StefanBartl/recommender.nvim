@@ -74,4 +74,4 @@ Replace mode (`-r`/`--replace`) registers a **temporary, one-shot** `WinClosed`
 autocmd per invocation (`lua/recommender/float/autocmds.lua`) to detect
 when the `:Replace` prompt closes, so the alias can be inserted right after.
 It removes itself immediately after firing — see
-[`doc/recommender.nvim.txt`](../doc/recommender.nvim.txt) section 8.
+[`doc/recommender.txt`](../doc/recommender.txt) section 8.
