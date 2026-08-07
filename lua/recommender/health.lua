@@ -51,7 +51,10 @@ function M.check()
   if require("recommender.util.lib").available() then
     vim.health.ok("lib.nvim found (notify/map delegate to it)")
   else
-    vim.health.info("lib.nvim.notify not found — native vim.notify/vim.keymap.set fallback used for notify/map specifically (lib.nvim itself is still required overall, see above)")
+    vim.health.info(
+      "lib.nvim.notify not found — native vim.notify/vim.keymap.set fallback used for notify/map "
+        .. "specifically (lib.nvim itself is still required overall, see above)"
+    )
   end
 
   if require("recommender.bindings.which_key").available() then
