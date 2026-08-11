@@ -50,7 +50,7 @@ See [docs/installation.md](docs/installation.md) for packer.nvim, vim-plug, and 
 
 ## Documentation
 
-- [Features](docs/features.md) — what the plugin does, at a glance.
+- [Features](docs/FEATURES.md) — what the plugin does, at a glance.
 - [Installation](docs/installation.md) — requirements and setup for lazy.nvim, packer.nvim, and vim-plug.
 - [Configuration](docs/configuration.md) — all `setup()` options, defaults, and the default global keymaps.
 - [Commands](docs/commands.md) — the `:Recommender` command, float window keymaps, and replace mode.
