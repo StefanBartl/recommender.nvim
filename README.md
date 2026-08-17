@@ -14,7 +14,7 @@
 
 > Pairs well with [replacer.nvim](https://github.com/StefanBartl/replacer.nvim), which provides the `:Replace` command used by [replace mode](docs/commands.md#replace-mode).
 
-Analyzes the current buffer — or the whole project with `-c`/`--cwd` — for frequently repeated dotted chains (`vim.api`, `table.insert`, …) in Lua, JS/TS, or Python, and suggests alias declarations in an interactive floating window. Pure Neovim — no external tooling. Requires [lib.nvim](https://github.com/StefanBartl/lib.nvim): `:Recommender` is registered via `lib.nvim.usercmd.composer`.
+Analyzes the current buffer — or the whole project with `-c`/`--cwd` — for frequently repeated dotted chains (`vim.api`, `table.insert`, …) in Lua, JS/TS, or Python, and suggests alias declarations in an interactive floating window. With `-r`/`--replace`, accepting a suggestion also rewrites every occurrence of the chain in the buffer via [replacer.nvim](https://github.com/StefanBartl/replacer.nvim)'s `:Replace`, not just the alias declaration. Pure Neovim — no external tooling. Requires [lib.nvim](https://github.com/StefanBartl/lib.nvim): `:Recommender` is registered via `lib.nvim.usercmd.composer`.
 
 ---
 
