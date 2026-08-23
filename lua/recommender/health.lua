@@ -34,7 +34,7 @@ function M.check()
   vim.health.ok('analyzer = "javascript" / "python" available (regex-based, no parser dependency)')
 
   vim.health.info(
-    ("--cwd (project-wide) scope: regex/javascript/python only, not treesitter — cwd_max_files=%d, cwd_ignore=%s"):format(
+    ("non-buffer scopes (cwd/path/cfile/line): regex/javascript/python only, not treesitter — cwd_max_files=%d, cwd_ignore=%s"):format(
       cfg.cwd_max_files or 0,
       table.concat(cfg.cwd_ignore or {}, ",")
     )

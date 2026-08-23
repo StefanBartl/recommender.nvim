@@ -22,7 +22,7 @@ CONTENTS                                        *recommender-contents*
   6. Command ................... |:Recommender|
   7. Float keymaps ............. |recommender-float-keymaps|
   8. Replace mode .............. |recommender-replace-mode|
-  9. Project-wide scope ........ |recommender-cwd-scope|
+  9. Scopes .................... |recommender-scopes|
  10. Analyzers ................. |recommender-analyzers|
  11. Lua API ................... |recommender-api|
  12. Health-check ............. |recommender-health|
@@ -210,20 +210,20 @@ cheatsheet: doc/BINDINGS.md (repo root: |recommender-architecture|).
     "dist", "build", ".next", "target", ".tox",
   }
 <
-Directory names skipped, at any depth, by a `-c`/`--cwd` scan (see
-|recommender-cwd-scope|). Matching is an exact path-segment name
-comparison, not a pattern — extend the list to skip additional vendor/build
-directories specific to your projects.
+Directory names skipped, at any depth, by a `cwd`/`path` scope scan (see
+|recommender-scopes|). Matching is an exact path-segment name comparison,
+not a pattern — extend the list to skip additional vendor/build directories
+specific to your projects.
 
 ------------------------------------------------------------------------------
 5.7 cwd_max_files                 *recommender-config-cwd-max-files*
 >
   cwd_max_files = 500   -- 0 = unbounded
 <
-Safety cap on the number of files a `-c`/`--cwd` scan reads. The scan is
-synchronous (no async job machinery in this plugin), so this bounds how long
-a project-wide invocation can take on a very large repository. If the cap is
-hit, a warning names `cwd_max_files` as the key to raise.
+Safety cap on the number of files a `cwd`/`path` scope scan reads. The scan
+is synchronous (no async job machinery in this plugin), so this bounds how
+long such an invocation can take on a very large repository/directory. If
+the cap is hit, a warning names `cwd_max_files` as the key to raise.
 
 ------------------------------------------------------------------------------
 5.8 float_layout                     *recommender-config-float-layout*
@@ -246,16 +246,20 @@ detailed, 1 for compact) instead of a hardcoded line count.
 ==============================================================================
 6. COMMAND                                                    *:Recommender*
 
-:Recommender [{flags}] [{analyzer}] [{threshold}]
+:Recommender [{flags}] [{analyzer}] [{threshold}] [{scope}]
 
-  Open the Recommender float for the current buffer. Running the command
-  while the float is already open closes it (toggle behavior).
+  Open the Recommender float, scoped to the current buffer by default.
+  Running the command while the float is already open closes it (toggle
+  behavior).
 
-  Arguments (all optional, any order for flags):
+  Arguments (all optional; the three positional slots accept any of
+  {analyzer}/{threshold}/{scope} in any order — see below):
 
     {flags}
       `-r` / `--replace`    Enable replace mode (see |recommender-replace-mode|).
-      `-c` / `--cwd`        Enable project-wide scope (see |recommender-cwd-scope|).
+      `-c` / `--cwd`        Backward-compatible alias for `{scope}` = `cwd`
+                            (see |recommender-scopes|); an explicit `{scope}`
+                            positional always wins over this flag.
 
     {analyzer}
       `regex`               Use the Lua regex backend.
@@ -266,6 +270,16 @@ detailed, 1 for compact) instead of a hardcoded line count.
     {threshold}
       Any positive integer. Overrides the configured threshold.
 
+    {scope}
+      `buffer`              (default) Analyze only the current buffer.
+      `path`                Scan every matching file under the current
+                            buffer's own directory.
+      `cwd`                 Scan every matching file under the working
+                            directory.
+      `cfile`               Scan the single file named under the cursor.
+      `line`                Scan only the current line.
+      See |recommender-scopes| for full details on each.
+
   Examples: >
     :Recommender
     :Recommender treesitter
@@ -273,17 +287,25 @@ detailed, 1 for compact) instead of a hardcoded line count.
     :Recommender -r treesitter 4
     :Recommender javascript
     :Recommender python 4
+    :Recommender cwd
     :Recommender -c
-    :Recommender -c javascript 5
+    :Recommender path
+    :Recommender cfile
+    :Recommender line
+    :Recommender cwd javascript 5
 <
   Tab-completion is available for `regex`, `treesitter`, `javascript`,
-  `python`, `-r`, `--replace`, `-c`, `--cwd`.
+  `python`, `buffer`, `path`, `cwd`, `cfile`, `line`, `-r`, `--replace`,
+  `-c`, `--cwd`.
 
   Built via `lib.nvim.usercmd.composer`: a single flat `path = {}` root
   route (this grammar has no subcommand word) declares `-r`/`--replace` and
-  `-c`/`--cwd` as short-flag aliases and two optional positional slots.
-  Dispatch is unchanged; an undeclared `--flag` (unlike an undeclared `-x`,
-  which stays a lenient positional) is now a hard error instead of being
+  `-c`/`--cwd` as short-flag aliases and three optional positional slots.
+  Each positional token is classified by content (a scope name, then an
+  analyzer name, then a number) rather than by which slot it landed in, so
+  `:Recommender cwd javascript 5` and `:Recommender 5 javascript cwd`
+  dispatch identically. An undeclared `--flag` (unlike an undeclared `-x`,
+  which stays a lenient positional) is a hard error instead of being
   silently treated as a no-op positional value.
 
 ==============================================================================
@@ -330,11 +352,21 @@ The detection mechanism is event-driven — no polling, no timers, no race
 conditions. The autocmd is removed immediately after firing.
 
 ==============================================================================
-9. PROJECT-WIDE SCOPE                              *recommender-cwd-scope*
+9. SCOPES                                              *recommender-scopes*
 
-By default `:Recommender` analyzes only the current buffer. With `-c` /
-`--cwd`, it instead scans every file under `getcwd()` matching the active
-analyzer's extensions:
+By default `:Recommender` analyzes only the current buffer. `{scope}` (see
+|:Recommender|) changes what gets scanned before the threshold is applied:
+`buffer` (default), `path`, `cwd`, `cfile`, `line`. Pressing `Enter`/`A`
+always inserts into the buffer that was active when `:Recommender` was
+invoked — scope only changes where chains are *counted*, never where the
+alias is written.
+
+------------------------------------------------------------------------------
+9.1 cwd / path                                     *recommender-cwd-scope*
+
+`cwd` scans every file under `getcwd()`; `path` runs the identical scan but
+rooted at the **current buffer's own directory** instead — matching the
+active analyzer's extensions:
 
   `regex` / `treesitter`   `*.lua`
   `javascript`             `*.js`, `*.jsx`, `*.ts`, `*.tsx`
@@ -343,22 +375,45 @@ analyzer's extensions:
 Each matching file is read from disk (`vim.fn.readfile()`) and every file's
 lines are concatenated into one combined line list before the usual
 count/threshold/alias-format pipeline runs — so a chain's count reflects its
-occurrences across the **entire project**, not just one file. Pressing
-`Enter`/`A` still inserts into the buffer that was active when
-`:Recommender` was invoked — cwd scope only changes where chains are
-*counted*, never where the alias is written.
+occurrences across every scanned file, not just one. `path` requires the
+current buffer to have a file path (errors on an unnamed buffer).
 
-Only the regex-based analyzers (`regex`, `javascript`, `python`) support
-`-c`. `treesitter` parses a live Neovim buffer's syntax tree via
-`vim.treesitter.get_parser(bufnr, "lua")`, not raw file text, so it cannot
-run over files on disk; combining `-c` with `treesitter` is a hard error
-naming the three supported analyzers instead.
+`-c` / `--cwd` is a backward-compatible flag alias for `{scope}` = `cwd`; an
+explicit `{scope}` positional always wins over it.
 
 Directories are skipped by exact name match via `config.cwd_ignore` (see
 |recommender-config-cwd-ignore|), and the scan is capped at
 `config.cwd_max_files` (see |recommender-config-cwd-max-files|) files —
 a warning names the config key to raise if the cap is hit. The scan is
 synchronous, matching the rest of this plugin (no async job machinery).
+
+------------------------------------------------------------------------------
+9.2 cfile                                         *recommender-cfile-scope*
+
+Scans a single file: whichever file is named under the cursor (`<cfile>`).
+Resolution order: as typed, then relative to the current buffer's
+directory, then via Vim's `'path'` option — the same order `gf` effectively
+relies on. Errors if nothing file-like is under the cursor, or the resolved
+file isn't readable.
+
+------------------------------------------------------------------------------
+9.3 line                                           *recommender-line-scope*
+
+Scans only the current line. Each analyzer dedups a chain to at most one
+hit per line scanned (see |recommender-architecture|), so a 1-line scan
+maxes out at count 1 per chain — the threshold therefore defaults to `1`
+for this scope specifically (not `config.threshold`) unless an explicit
+`{threshold}` token is given.
+
+------------------------------------------------------------------------------
+9.4 Analyzer support                        *recommender-scope-analyzers*
+
+Only the regex-based analyzers (`regex`, `javascript`, `python`) support any
+non-`buffer` scope. `treesitter` parses a live Neovim buffer's syntax tree
+via `vim.treesitter.get_parser(bufnr, "lua")`, not raw file text, so it
+cannot run over files on disk or a single extracted line; combining
+`treesitter` with `path`/`cwd`/`cfile`/`line` is a hard error naming the
+three supported analyzers instead.
 
 ==============================================================================
 10. ANALYZERS                                     *recommender-analyzers*
@@ -429,8 +484,9 @@ Internal modules can be imported directly if needed: >
 Reports Neovim version, lib.nvim.usercmd.composer availability (required —
 see |recommender-requirements|), Tree-sitter Lua parser availability,
 javascript/python analyzer availability, the active `cwd_ignore`/
-`cwd_max_files` cwd-scope settings, the active `float_layout`, plugin-loaded
-state, lib.nvim.notify/which-key detection (soft, cosmetic only), whether
+`cwd_max_files` settings shared by the `cwd`/`path` scopes, the active
+`float_layout`, plugin-loaded state, lib.nvim.notify/which-key detection
+(soft, cosmetic only), whether
 global keymaps are enabled, and whether a `:Replace` command is available
 for replace mode.
 
@@ -460,7 +516,7 @@ for replace mode.
       autocmds.lua           one-shot WinClosed hook (replace-mode)
     blacklist.lua            prefix matching + default list
     custom_aliases.lua       built-in chain → alias name map
-    project.lua              cwd file discovery for -c/--cwd scope
+    project.lua              file discovery for cwd/path/cfile scopes
     analyzers/
       regex.lua              regex-based scanner (Lua)
       treesitter.lua         Tree-sitter-based scanner (Lua)

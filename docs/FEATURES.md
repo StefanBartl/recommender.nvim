@@ -18,21 +18,27 @@ the same suggestion float.
 `treesitter.lua` is only required the first time it's actually selected —
 the other three analyzers never pay for loading a parser they don't use.
 
-## Project-wide (`-c`/`--cwd`) scope
+## Scopes: `buffer` (default), `path`, `cwd`, `cfile`, `line`
 
-Aggregates chain counts across every matching file under the working
-directory, instead of just the current buffer, before applying the
-threshold — surfaces chains that repeat across a project even when no
-single file crosses the threshold alone.
+Changes what gets scanned before the threshold is applied — the current
+buffer only (default), every matching file under the current file's own
+directory (`path`) or the working directory (`cwd`), a single file named
+under the cursor (`cfile`), or just the current line (`line`).
+`cwd`/`path` surface chains that repeat across many files even when no
+single file crosses the threshold alone; `cfile` isolates one file without
+touching the buffer or `cwd`; `line` is a quick single-line check.
 
 - **Module:** `project.lua`
-- **Usercmds:** `:Recommender -c` / `:Recommender --cwd`
-- **Config:** `opts.cwd_ignore` (skip-list, default covers `.git`, `node_modules`, `.venv`, etc.), `opts.cwd_max_files` (safety cap, default `500`, `0` = unbounded)
+- **Usercmds:** `:Recommender cwd` / `:Recommender path` / `:Recommender cfile` / `:Recommender line` (`-c`/`--cwd` is a backward-compatible flag alias for `cwd`)
+- **Config:** `opts.cwd_ignore` (skip-list for `cwd`/`path`, default covers `.git`, `node_modules`, `.venv`, etc.), `opts.cwd_max_files` (safety cap for `cwd`/`path`, default `500`, `0` = unbounded)
 
 `Enter`/`A` still insert into the *current* buffer regardless of scope —
-`-c` only changes where chains are counted. Only the regex-based analyzers
-support `-c`; combining it with `treesitter` is a hard error, since
-treesitter parses a live buffer's syntax tree, not raw file text on disk.
+scope only changes where chains are counted. Only the regex-based analyzers
+support any non-`buffer` scope; combining one with `treesitter` is a hard
+error, since treesitter parses a live buffer's syntax tree, not raw file
+text on disk. `line` scope defaults its threshold to `1` instead of
+`config.threshold`, since a single line dedups each chain to at most one
+hit — pass an explicit threshold token to override.
 
 ## Interactive suggestion float
 

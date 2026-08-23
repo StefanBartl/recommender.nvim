@@ -1,11 +1,15 @@
 ---@module 'recommender.project'
----@brief Project-wide (cwd) file discovery for multi-file chain analysis.
+---@brief Multi-file/single-file chain discovery for every non-buffer scope.
 ---@description
---- Only the regex-based analyzers (regex, javascript, python) support cwd
---- scope — they operate on plain text lines, so files read from disk work
---- the same way a buffer's lines do. The treesitter analyzer stays
---- buffer-only: it parses a live Neovim buffer's syntax tree, not raw file
---- text, so it is out of scope here (see `supports_cwd()`).
+--- Shared by `cwd` and `path` scope (`find_files` + `read_lines` over a
+--- directory root — `getcwd()` for `cwd`, the current file's directory for
+--- `path`) and by `cfile` scope (`read_lines` over a single resolved path).
+--- Only the regex-based analyzers (regex, javascript, python) support
+--- reading from disk instead of a live buffer — they operate on plain text
+--- lines, so file content works the same way a buffer's lines do. The
+--- treesitter analyzer stays buffer-only: it parses a live Neovim buffer's
+--- syntax tree, not raw file text, so it is out of scope here (see
+--- `supports_cwd()`, which gates every non-buffer scope despite the name).
 ---
 --- Files are read synchronously via `vim.fn.readfile()` — this plugin has no
 --- async machinery, and a synchronous scan matches the rest of the codebase.
@@ -23,7 +27,9 @@ local EXTENSIONS = {
   python = { "py" },
 }
 
----Whether `analyzer_name` supports project-wide (cwd) scope.
+---Whether `analyzer_name` supports any non-buffer scope (`cwd`, `path`,
+---`cfile`, `line`) — every one of them ends up calling `analyze()` with an
+---explicit `lines` array, which only the regex-based analyzers accept.
 ---@param analyzer_name string
 ---@return boolean
 function M.supports_cwd(analyzer_name)

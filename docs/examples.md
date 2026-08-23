@@ -43,6 +43,6 @@ Same buffer, with `float_layout = "compact"`:
 ```
 
 One line per suggestion instead of three — useful when `threshold` is low
-and a buffer or [project-wide scan](commands.md#project-wide--c----cwd-scope)
-surfaces many suggestions at once. Navigation (`j`/`k`) and every other float
-keymap work identically in both layouts.
+and a buffer or [wider scope](commands.md#scopes) surfaces many suggestions
+at once. Navigation (`j`/`k`) and every other float keymap work identically
+in both layouts.

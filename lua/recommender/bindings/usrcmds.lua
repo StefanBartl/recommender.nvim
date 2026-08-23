@@ -1,19 +1,27 @@
 ---@module 'recommender.bindings.usrcmds'
 ---@brief The `:Recommender` user command, built via lib.nvim.usercmd.composer.
 ---@description
---- Parses flags/positional args, resolves the analyzer + threshold, and owns
---- the per-invocation state passed to `recommender.float.keymaps`.
+--- Parses flags/positional args, resolves the analyzer + threshold + scope,
+--- and owns the per-invocation state passed to `recommender.float.keymaps`.
 ---
 --- execute() is the dispatch engine (state/refresh/rendering logic). The one
 --- composer route is a `path = {}` root route — this grammar has no
 --- subcommand word at all — declaring `flags = {{name="replace", short="r",
 --- bool=true}, {name="cwd", short="c", bool=true}}` (Phase 7's short-flag
---- alias, added specifically to unblock this repo) and two optional
---- positional slots for analyzer/threshold. Composer's flag/positional split
---- is the same algorithm the original inline loop used (strip -r/--replace
---- tokens, keep the rest in order), so ctx.flags.replace / ctx.pos feed
---- execute() directly — no reconstruction needed. `-c`/`--cwd` (project-wide
---- scope, see `recommender.project`) follows the same short-flag pattern.
+--- alias, added specifically to unblock this repo) and three optional
+--- positional slots. Composer's flag/positional split is the same algorithm
+--- the original inline loop used (strip -r/--replace tokens, keep the rest
+--- in order), so ctx.flags.replace / ctx.pos feed execute() directly — no
+--- reconstruction needed.
+---
+--- Scope (`buffer` (default) | `path` | `cwd` | `cfile` | `line`) is a plain
+--- positional value, classified by content rather than by slot position —
+--- `classify_pos_args()` scans every leftover token and buckets it as a
+--- scope, analyzer, or threshold match regardless of where it appears, so
+--- `:Recommender cwd javascript 5`, `:Recommender javascript cwd 5`, and
+--- `:Recommender 5 javascript cwd` all resolve identically. `-c`/`--cwd`
+--- (see `recommender.project`) is kept as a backward-compatible alias for
+--- `scope = "cwd"`; an explicit scope positional always wins over it.
 
 local composer = require("lib.nvim.usercmd.composer")
 
@@ -34,6 +42,33 @@ local ANALYZER_NAMES = { "regex", "treesitter", "javascript", "python" }
 local _is_analyzer_name = {}
 for _, name in ipairs(ANALYZER_NAMES) do
   _is_analyzer_name[name] = true
+end
+
+---Names accepted for the `{scope}` positional arg. `"buffer"` is the
+---default and never needs to be typed; it's listed so `:Recommender buffer`
+---works as an explicit no-op.
+---@type string[]
+local SCOPE_NAMES = { "buffer", "path", "cwd", "cfile", "line" }
+
+---@type table<string, boolean>
+local _is_scope_name = {}
+for _, name in ipairs(SCOPE_NAMES) do
+  _is_scope_name[name] = true
+end
+
+---Title suffix per non-default scope; `"buffer"` gets none.
+---@type table<string, string>
+local SCOPE_LABEL = { cwd = "PROJECT", path = "PATH", cfile = "CFILE", line = "LINE" }
+
+---Positional-value completion hints: either an analyzer name or a scope
+---name may land in any of the three positional slots (see `classify_pos_args`).
+---@type string[]
+local COMPLETION_VALUES = {}
+for _, name in ipairs(ANALYZER_NAMES) do
+  COMPLETION_VALUES[#COMPLETION_VALUES + 1] = name
+end
+for _, name in ipairs(SCOPE_NAMES) do
+  COMPLETION_VALUES[#COMPLETION_VALUES + 1] = name
 end
 
 ---@type table<string, table>
@@ -57,21 +92,84 @@ local function get_analyzer(name)
   return mod
 end
 
+---@internal
+---Classify leftover positional tokens by content, not by slot position —
+---each token is checked against the scope names, then the analyzer names,
+---then `tonumber`. The first match for each category wins, so token order
+---never matters: `cwd javascript 5`, `javascript cwd 5`, and `5 javascript
+---cwd` all classify identically.
+---@param pos_args string[]
+---@return string|nil analyzer_name
+---@return integer|nil threshold
+---@return string|nil scope
+local function classify_pos_args(pos_args)
+  local analyzer_name, threshold, scope
+  for _, tok in ipairs(pos_args) do
+    if not scope and _is_scope_name[tok] then
+      scope = tok
+    elseif not analyzer_name and _is_analyzer_name[tok] then
+      analyzer_name = tok
+    elseif not threshold then
+      threshold = tonumber(tok)
+    end
+  end
+  return analyzer_name, threshold, scope
+end
+
+---@internal
+---Resolve `<cfile>` text to an absolute, readable file path: as typed,
+---then relative to the source buffer's directory, then via the `'path'`
+---option — the same resolution order `gf` effectively relies on.
+---@param cfile string|nil
+---@param bufnr integer
+---@return string|nil path
+---@return string|nil err
+local function resolve_cfile(cfile, bufnr)
+  if not cfile or cfile == "" then
+    return nil, "no file name under the cursor"
+  end
+
+  if vim.fn.filereadable(cfile) == 1 then
+    return vim.fn.fnamemodify(cfile, ":p"), nil
+  end
+
+  local bufname = api.nvim_buf_get_name(bufnr)
+  if bufname ~= "" then
+    local candidate = vim.fn.fnamemodify(bufname, ":p:h") .. "/" .. cfile
+    if vim.fn.filereadable(candidate) == 1 then
+      return vim.fn.fnamemodify(candidate, ":p"), nil
+    end
+  end
+
+  local found = vim.fn.findfile(cfile, vim.o.path)
+  if found ~= "" and vim.fn.filereadable(found) == 1 then
+    return vim.fn.fnamemodify(found, ":p"), nil
+  end
+
+  return nil, ("no readable file found for %q under the cursor"):format(cfile)
+end
+
 -- Per-buffer ignore state: { [bufnr] = { [chain] = true } }
 local ignore_by_buf = {}
 
 ---@internal
----Run one `:Recommender` invocation: resolve analyzer/threshold, toggle the
----float if already open, and (re)build the per-buffer state whose `refresh()`
----drives the suggestion list.
+---Run one `:Recommender` invocation: resolve analyzer/threshold/scope,
+---toggle the float if already open, and (re)build the per-buffer state
+---whose `refresh()` drives the suggestion list.
 ---@param cfg Recommender.Config
 ---@param replace_mode boolean
 ---@param pos_args string[]
----@param cwd_mode boolean
+---@param cwd_flag boolean  `-c`/`--cwd`; backward-compatible alias for `scope = "cwd"`, overridden by an explicit scope positional.
 ---@return nil
-local function execute(cfg, replace_mode, pos_args, cwd_mode)
-  local analyzer_name = (pos_args[1] and _is_analyzer_name[pos_args[1]]) and pos_args[1] or cfg.analyzer
-  local threshold = tonumber(pos_args[2]) or tonumber(pos_args[1]) or cfg.threshold
+local function execute(cfg, replace_mode, pos_args, cwd_flag)
+  local pos_analyzer, pos_threshold, pos_scope = classify_pos_args(pos_args)
+  local analyzer_name = pos_analyzer or cfg.analyzer
+  local scope = pos_scope or (cwd_flag and "cwd") or "buffer"
+  -- A single line dedups each chain to at most one hit (see analyzers'
+  -- per-line dedup), so config.threshold (>1 in practice) would make "line"
+  -- scope silently report "no suggestions" every time. Default to 1 unless
+  -- the caller explicitly typed a threshold.
+  local threshold = pos_threshold or (scope == "line" and 1) or cfg.threshold
 
   -- Toggle: close if already open
   if rendering.is_open() then
@@ -90,6 +188,11 @@ local function execute(cfg, replace_mode, pos_args, cwd_mode)
     blacklist = cfg.blacklist or {},
     replace_mode = replace_mode,
     visible = {},
+    -- Captured now (invocation time), not inside refresh()'s vim.schedule,
+    -- so `cfile`/`line` scope reads the cursor/file that was under it when
+    -- `:Recommender` was actually called.
+    cfile_raw = vim.fn.expand("<cfile>"),
+    cursor_line_text = api.nvim_get_current_line(),
   }
 
   function state.refresh()
@@ -103,30 +206,56 @@ local function execute(cfg, replace_mode, pos_args, cwd_mode)
       local analyzer = get_analyzer(analyzer_name)
       local all
 
-      if cwd_mode then
-        if not project.supports_cwd(analyzer_name) then
-          notify.error(("cwd scope isn't supported for analyzer %q — use regex, javascript, or python"):format(analyzer_name))
-          rendering.close()
-          return
-        end
-
-        local cwd = vim.fn.getcwd()
-        local paths, truncated = project.find_files(analyzer_name, cwd, cfg.cwd_ignore, cfg.cwd_max_files)
-        if #paths == 0 then
-          notify.info(("No matching files found under %s"):format(cwd))
-          rendering.close()
-          return
-        end
-        if truncated then
-          notify.warn(("cwd scan capped at %d files (config.cwd_max_files)"):format(cfg.cwd_max_files))
-        end
-
-        local project_lines = project.read_lines(paths)
-        all = analyzer.analyze(threshold, state.custom_aliases, state.blacklist, project_lines)
-      else
+      if scope == "buffer" then
         api.nvim_buf_call(state.source_bufnr, function()
           all = analyzer.analyze(threshold, state.custom_aliases, state.blacklist)
         end)
+      else
+        if not project.supports_cwd(analyzer_name) then
+          notify.error(("%s scope isn't supported for analyzer %q — use regex, javascript, or python"):format(scope, analyzer_name))
+          rendering.close()
+          return
+        end
+
+        local lines
+
+        if scope == "cwd" or scope == "path" then
+          local root
+          if scope == "cwd" then
+            root = vim.fn.getcwd()
+          else
+            local bufname = api.nvim_buf_get_name(state.source_bufnr)
+            if bufname == "" then
+              notify.error("path scope requires the current buffer to have a file path")
+              rendering.close()
+              return
+            end
+            root = vim.fn.fnamemodify(bufname, ":p:h")
+          end
+
+          local paths, truncated = project.find_files(analyzer_name, root, cfg.cwd_ignore, cfg.cwd_max_files)
+          if #paths == 0 then
+            notify.info(("No matching files found under %s"):format(root))
+            rendering.close()
+            return
+          end
+          if truncated then
+            notify.warn(("%s scan capped at %d files (config.cwd_max_files)"):format(scope, cfg.cwd_max_files))
+          end
+          lines = project.read_lines(paths)
+        elseif scope == "cfile" then
+          local path, path_err = resolve_cfile(state.cfile_raw, state.source_bufnr)
+          if not path then
+            notify.error(path_err)
+            rendering.close()
+            return
+          end
+          lines = project.read_lines({ path })
+        else -- "line"
+          lines = { state.cursor_line_text or "" }
+        end
+
+        all = analyzer.analyze(threshold, state.custom_aliases, state.blacklist, lines)
       end
 
       state.visible = {}
@@ -143,8 +272,8 @@ local function execute(cfg, replace_mode, pos_args, cwd_mode)
       end
 
       local title = ("Recommender: %d suggestion%s"):format(#state.visible, #state.visible == 1 and "" or "s")
-      if cwd_mode then
-        title = title .. "  [PROJECT]"
+      if SCOPE_LABEL[scope] then
+        title = title .. ("  [%s]"):format(SCOPE_LABEL[scope])
       end
       if replace_mode then
         title = title .. "  [REPLACE MODE]"
@@ -170,13 +299,14 @@ end
 ---@return nil
 function M.setup(cfg)
   composer.verb("Recommender", {
-    desc = "Suggest local aliases for repeated chains. Flags: -r/--replace -c/--cwd [analyzer] [threshold]",
+    desc = "Suggest local aliases for repeated chains. Flags: -r/--replace -c/--cwd [analyzer] [threshold] [scope]",
     routes = {
       {
         path = {},
         args = {
-          { name = "a1", type = "STRING", values = ANALYZER_NAMES, optional = true },
-          { name = "a2", type = "STRING", values = ANALYZER_NAMES, optional = true },
+          { name = "a1", type = "STRING", values = COMPLETION_VALUES, optional = true },
+          { name = "a2", type = "STRING", values = COMPLETION_VALUES, optional = true },
+          { name = "a3", type = "STRING", values = COMPLETION_VALUES, optional = true },
         },
         flags = {
           { name = "replace", short = "r", bool = true },

@@ -11,8 +11,8 @@
 ---@field custom_aliases table<string,string>  Chain -> preferred alias name override
 ---@field blacklist      string[]              Prefix-blocked chains (never suggested)
 ---@field keymaps        boolean               Install global keymaps in setup() (default: true)
----@field cwd_ignore     string[]              Directory names skipped (any depth) by `:Recommender --cwd`
----@field cwd_max_files  integer               Cap on files read by `--cwd` scans (default: 500; 0 = unbounded)
+---@field cwd_ignore     string[]              Directory names skipped (any depth) by `cwd`/`path` scope scans
+---@field cwd_max_files  integer               Cap on files read by `cwd`/`path` scope scans (default: 500; 0 = unbounded)
 ---@field float_layout   "detailed"|"compact"  Float window layout (default: "detailed")
 
 ---@class Recommender.Suggestion

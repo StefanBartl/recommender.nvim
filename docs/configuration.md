@@ -27,10 +27,10 @@ require("recommender").setup({
   -- Install default global keymaps (set false to manage keymaps yourself)
   keymaps = true,
 
-  -- Directory names skipped (any depth) by `:Recommender --cwd` scans
+  -- Directory names skipped (any depth) by `cwd`/`path` scope scans
   cwd_ignore = { ".git", "node_modules", ".venv", "venv", "__pycache__", "dist", "build", ".next", "target", ".tox" },
 
-  -- Safety cap on files read by a `--cwd` scan (0 = unbounded)
+  -- Safety cap on files read by a `cwd`/`path` scope scan (0 = unbounded)
   cwd_max_files = 500,
 
   -- Float window layout: "detailed" (chain / alias / blank, 3 lines each)
@@ -63,4 +63,4 @@ the `<leader>lr` group automatically — no extra config needed. Full cheatsheet
 | `<leader>lrj` | `:Recommender javascript`   | Force JS/TS regex analyzer |
 | `<leader>lrp` | `:Recommender python`       | Force Python regex analyzer |
 | `<leader>lrh` | `:Recommender regex 5`      | Regex, threshold 5 (large files) |
-| `<leader>lrc` | `:Recommender -c`           | Project-wide (cwd) scope — see [Commands](commands.md#project-wide--c----cwd-scope) |
+| `<leader>lrc` | `:Recommender -c`           | Project-wide (cwd) scope — see [Commands](commands.md#scopes) |
