@@ -1,13 +1,14 @@
 # Features
 
-Analyzes a buffer (or a whole project) for dotted chains repeated often
-enough to be worth aliasing, and lets you act on the suggestions without
-leaving the float.
+Analyzes a buffer (or a whole project) for either dotted chains repeated
+often enough to be worth aliasing, or (via `analyzer = "perf"`) Lua
+performance anti-patterns with a measured, benchmarked win — and lets you
+act on the suggestions without leaving the float.
 
-## Four analyzer backends
+## Five analyzer backends
 
 `regex` and `treesitter` both target Lua; `javascript` and `python` are
-separate regex-based backends for JS/TS and Python respectively. All four
+separate regex-based backends for JS/TS and Python respectively. These four
 count occurrences of dotted chains (`vim.api`, `table.insert`, …) and feed
 the same suggestion float.
 
@@ -16,7 +17,42 @@ the same suggestion float.
 - **Config:** `opts.analyzer` (default `"regex"`)
 
 `treesitter.lua` is only required the first time it's actually selected —
-the other three analyzers never pay for loading a parser they don't use.
+the other analyzers never pay for loading a parser they don't use.
+
+The fifth, `perf`, is a different kind of analyzer entirely — see below.
+
+## Perf analyzer (`analyzer = "perf"`)
+
+Benchmarking this plugin's own core premise found that dotted-chain
+aliasing (`local api = vim.api`) has **no measurable benefit under
+LuaJIT** — Neovim's runtime hoists the loop-invariant lookup itself, so
+`mod.fn(x)` in a loop and `local fn = mod.fn; fn(x)` measure identically.
+What *did* show a real, repeatable win in the same benchmark run: four
+specific Lua anti-patterns, each backed by an isolated before/after
+measurement. `perf` flags only those four — nothing else:
+
+| Pattern | Flagged when | Measured cost |
+|---|---|---|
+| `table.insert(t, v)` in a loop | inside `for`/`while`/`repeat` | ~4-5x slower than `t[#t+1] = v` / `t[i] = v` |
+| `x = x .. y` accumulator in a loop | self-referential concat (`s = s .. chunk`), inside a loop | O(n²) vs. `table.concat()`'s O(n) |
+| `for _, v in ipairs(t) do` | anywhere (the per-iteration cost is independent of nesting) | ~2x slower than `for i = 1, #t do` |
+| `string.format(...)` in a loop | inside `for`/`while`/`repeat` | ~3x slower than `..` concatenation |
+
+- **Module:** `analyzers/perf.lua`
+- **Usercmd:** `:Recommender perf` ([commands](BINDINGS.md#user-commands))
+- **Config:** same `opts.threshold`/`opts.blacklist`/`opts.custom_aliases` knobs as the other analyzers (see [Configuration](configuration.md)); `opts.custom_aliases` lets you override the exact tip text per pattern key (e.g. `custom_aliases["table.insert(...)"] = "..."`)
+
+Loop detection is a lightweight line-based block tracker (for/while/repeat
+vs. if/function/do), not a real parser — like `regex`, it can misfire
+inside comments or string literals. `Enter`/`A` insert the tip as a plain
+`-- perf: ...` comment, never an automatic rewrite: the concrete
+replacement depends on variable names/context this analyzer can't safely
+infer, so nothing is rewritten for you.
+
+`config.threshold` (default `3`) applies here too, but its meaning is
+different from the chain analyzers: it's "how many instances of this
+pattern exist in the scanned scope", not a repetition-worthiness cutoff —
+pass `:Recommender perf 1` to see every instance regardless of count.
 
 ## Scopes: `buffer` (default), `path`, `cwd`, `cfile`, `line`
 

@@ -9,6 +9,7 @@
 :Recommender treesitter 4 -r       " treesitter, threshold 4, replace mode
 :Recommender javascript            " JS/TS regex analyzer
 :Recommender python 4              " Python regex analyzer, threshold 4
+:Recommender perf 1                " perf anti-pattern analyzer, every instance
 :Recommender -r                    " replace mode with defaults
 :Recommender cwd                   " project-wide scope
 :Recommender -c                    " same as above (backward-compat flag)
@@ -21,8 +22,13 @@
 The command is a **toggle** — running it while the float is open closes it.
 
 Tab-completion is available for `regex`, `treesitter`, `javascript`,
-`python`, `buffer`, `path`, `cwd`, `cfile`, `line`, `-r`, `--replace`, `-c`,
-`--cwd`.
+`python`, `perf`, `buffer`, `path`, `cwd`, `cfile`, `line`, `-r`, `--replace`,
+`-c`, `--cwd`.
+
+`perf` is a different kind of analyzer — it flags Lua performance
+anti-patterns with a measured benefit (not dotted-chain repetition). See
+[Features](FEATURES.md#perf-analyzer-analyzer--perf) for the four patterns
+it looks for and why the others don't have one.
 
 Built via `lib.nvim.usercmd.composer`: a single flat root route (no
 subcommand word) with `-r`/`--replace` and `-c`/`--cwd` declared as
@@ -75,10 +81,11 @@ scope — scope only changes where chains are *counted*.
                        (not `config.threshold`) unless you pass an explicit
                        `{threshold}` token.
 
-Only the regex-based analyzers (`regex`, `javascript`, `python`) support any
-non-`buffer` scope — `treesitter` parses a live Neovim buffer's syntax tree,
-not raw file text, so combining it with `path`/`cwd`/`cfile`/`line` is a hard
-error telling you to pick `regex`, `javascript`, or `python` instead.
+Only the regex-based analyzers (`regex`, `javascript`, `python`, `perf`)
+support any non-`buffer` scope — `treesitter` parses a live Neovim buffer's
+syntax tree, not raw file text, so combining it with
+`path`/`cwd`/`cfile`/`line` is a hard error naming the supported analyzers
+instead.
 
 `cwd` and `path` share two config keys that tune the scan (see
 [Configuration](configuration.md)): `cwd_ignore` (directory names skipped at
@@ -99,6 +106,10 @@ hit, a warning names the config key to raise.
 | `U` | Un-ignore all — restore dismissed suggestions |
 | `q` / `Esc` | Close |
 | `?` | Show keymap help |
+
+For `analyzer = "perf"`, "alias" above means the pattern's advisory
+`-- perf: ...` comment, not a `local` declaration — see
+[Features](FEATURES.md#perf-analyzer-analyzer--perf).
 
 ## Replace mode
 

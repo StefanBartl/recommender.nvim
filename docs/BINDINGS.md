@@ -33,9 +33,9 @@ helpers in `util/lib.lua`.
 
 | name | args | desc |
 | --- | --- | --- |
-| `:Recommender` | `[-r\|--replace] [-c\|--cwd] [regex\|treesitter\|javascript\|python] [threshold] [buffer\|path\|cwd\|cfile\|line]` | Toggle the suggestion float; scope changes where chains are counted (default: current buffer only; non-`buffer` scopes are regex/javascript/python only) |
+| `:Recommender` | `[-r\|--replace] [-c\|--cwd] [regex\|treesitter\|javascript\|python\|perf] [threshold] [buffer\|path\|cwd\|cfile\|line]` | Toggle the suggestion float; scope changes where chains are counted (default: current buffer only; non-`buffer` scopes are regex/javascript/python/perf only) |
 
-Tab completion offers `regex`, `treesitter`, `javascript`, `python`, `buffer`, `path`, `cwd`, `cfile`, `line`, `-r`, `--replace`, `-c`, `--cwd` in any order — any positional slot accepts an analyzer name, a scope name, or a threshold number, classified by content rather than position (see [commands.md](commands.md#scopes)).
+Tab completion offers `regex`, `treesitter`, `javascript`, `python`, `perf`, `buffer`, `path`, `cwd`, `cfile`, `line`, `-r`, `--replace`, `-c`, `--cwd` in any order — any positional slot accepts an analyzer name, a scope name, or a threshold number, classified by content rather than position (see [commands.md](commands.md#scopes)). `perf` is a fixed-pattern anti-pattern detector, not a dotted-chain analyzer — see [FEATURES.md](FEATURES.md#perf-analyzer-analyzer--perf).
 
 ## Float Window Keymaps
 

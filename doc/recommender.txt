@@ -105,7 +105,7 @@ All keys are optional. Unset keys use the defaults shown below.
 ------------------------------------------------------------------------------
 5.1 analyzer                           *recommender-config-analyzer*
 >
-  analyzer = "regex"   -- "regex" | "treesitter" | "javascript" | "python"
+  analyzer = "regex"   -- "regex"|"treesitter"|"javascript"|"python"|"perf"
 <
 Controls which backend scans the buffer.
 
@@ -125,8 +125,12 @@ Controls which backend scans the buffer.
                   `%s = %s` assignment (Python has no `local`/`const`
                   keyword). No parser dependency.
 
+  `"perf"`        Not a chain counter — flags four benchmarked Lua
+                  performance anti-patterns instead. See
+                  |recommender-analyzer-perf|.
+
 You can override the analyzer per invocation: `:Recommender treesitter`,
-`:Recommender javascript`, `:Recommender python`
+`:Recommender javascript`, `:Recommender python`, `:Recommender perf`
 
 ------------------------------------------------------------------------------
 5.2 threshold                          *recommender-config-threshold*
@@ -266,6 +270,8 @@ detailed, 1 for compact) instead of a hardcoded line count.
       `treesitter`          Use the Lua Tree-sitter backend.
       `javascript`          Use the JS/TS regex backend.
       `python`              Use the Python regex backend.
+      `perf`                Flag Lua perf anti-patterns instead of chains
+                            (see |recommender-analyzer-perf|).
 
     {threshold}
       Any positive integer. Overrides the configured threshold.
@@ -287,6 +293,7 @@ detailed, 1 for compact) instead of a hardcoded line count.
     :Recommender -r treesitter 4
     :Recommender javascript
     :Recommender python 4
+    :Recommender perf 1
     :Recommender cwd
     :Recommender -c
     :Recommender path
@@ -295,8 +302,8 @@ detailed, 1 for compact) instead of a hardcoded line count.
     :Recommender cwd javascript 5
 <
   Tab-completion is available for `regex`, `treesitter`, `javascript`,
-  `python`, `buffer`, `path`, `cwd`, `cfile`, `line`, `-r`, `--replace`,
-  `-c`, `--cwd`.
+  `python`, `perf`, `buffer`, `path`, `cwd`, `cfile`, `line`, `-r`,
+  `--replace`, `-c`, `--cwd`.
 
   Built via `lib.nvim.usercmd.composer`: a single flat `path = {}` root
   route (this grammar has no subcommand word) declares `-r`/`--replace` and
@@ -408,12 +415,12 @@ for this scope specifically (not `config.threshold`) unless an explicit
 ------------------------------------------------------------------------------
 9.4 Analyzer support                        *recommender-scope-analyzers*
 
-Only the regex-based analyzers (`regex`, `javascript`, `python`) support any
-non-`buffer` scope. `treesitter` parses a live Neovim buffer's syntax tree
-via `vim.treesitter.get_parser(bufnr, "lua")`, not raw file text, so it
-cannot run over files on disk or a single extracted line; combining
-`treesitter` with `path`/`cwd`/`cfile`/`line` is a hard error naming the
-three supported analyzers instead.
+Only the regex-based analyzers (`regex`, `javascript`, `python`, `perf`)
+support any non-`buffer` scope. `treesitter` parses a live Neovim buffer's
+syntax tree via `vim.treesitter.get_parser(bufnr, "lua")`, not raw file
+text, so it cannot run over files on disk or a single extracted line;
+combining `treesitter` with `path`/`cwd`/`cfile`/`line` is a hard error
+naming the supported analyzers instead.
 
 ==============================================================================
 10. ANALYZERS                                     *recommender-analyzers*
@@ -453,6 +460,43 @@ Regex-based, for Python buffers. Same chain-extraction approach as
 `"regex"`. Suggests a plain `%s = %s` assignment, since Python has no
 `local`/`const` declaration keyword.
 
+------------------------------------------------------------------------------
+perf                                           *recommender-analyzer-perf*
+
+Not a chain counter — flags four Lua performance anti-patterns, each backed
+by an isolated before/after benchmark rather than repetition count.
+Benchmarking this plugin's own core premise found dotted-chain aliasing has
+no measurable benefit under LuaJIT (Neovim's runtime hoists the
+loop-invariant lookup itself); these four patterns are the ones that DID
+show a real, repeatable win in the same benchmark run:
+
+  `table.insert(t, v)` in a loop     ~4-5x slower than `t[#t+1] = v` /
+                                     `t[i] = v` (indexed assignment)
+
+  `x = x .. y` accumulator in a      O(n^2) vs. `table.concat()`'s O(n) —
+  loop (self-referential concat)     only self-concat (`s = s .. chunk`)
+                                     is flagged, not general `..` usage
+
+  `for _, v in ipairs(t) do`         ~2x slower than `for i = 1, #t do`;
+                                     flagged on its own line regardless of
+                                     nesting (the per-iteration cost doesn't
+                                     depend on it)
+
+  `string.format(...)` in a loop     ~3x slower than `..` concatenation
+
+"In a loop" is detected via a lightweight line-based block tracker
+(for/while/repeat vs. if/function/do) — not a real parser, so like `regex`
+it can misfire inside comments or string literals.
+
+`Enter`/`A` insert the tip as a plain `-- perf: ...` comment, never an
+automatic rewrite — the concrete replacement depends on variable
+names/context this analyzer can't safely infer.
+
+`config.threshold` applies here too, but means something different: "how
+many instances of this pattern exist in the scanned scope", not a
+repetition-worthiness cutoff. Pass `:Recommender perf 1` to see every
+instance regardless of count.
+
 ==============================================================================
 11. LUA API                                        *recommender-api*
 
@@ -483,7 +527,7 @@ Internal modules can be imported directly if needed: >
 <
 Reports Neovim version, lib.nvim.usercmd.composer availability (required —
 see |recommender-requirements|), Tree-sitter Lua parser availability,
-javascript/python analyzer availability, the active `cwd_ignore`/
+javascript/python/perf analyzer availability, the active `cwd_ignore`/
 `cwd_max_files` settings shared by the `cwd`/`path` scopes, the active
 `float_layout`, plugin-loaded state, lib.nvim.notify/which-key detection
 (soft, cosmetic only), whether
@@ -522,6 +566,7 @@ for replace mode.
       treesitter.lua         Tree-sitter-based scanner (Lua)
       javascript.lua         regex-based scanner (JS/TS)
       python.lua             regex-based scanner (Python)
+      perf.lua               fixed-pattern perf anti-pattern detector (Lua)
   plugin/
     recommender.lua          loaded-guard (vim.g.loaded_recommender)
     recommender_autodoc.lua  generates doc/tags on first load if missing

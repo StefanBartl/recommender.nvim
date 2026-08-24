@@ -31,10 +31,10 @@ function M.check()
     vim.health.info('Lua Tree-sitter parser not found — install with :TSInstall lua to use analyzer = "treesitter"')
   end
 
-  vim.health.ok('analyzer = "javascript" / "python" available (regex-based, no parser dependency)')
+  vim.health.ok('analyzer = "javascript" / "python" / "perf" available (regex-based, no parser dependency)')
 
   vim.health.info(
-    ("non-buffer scopes (cwd/path/cfile/line): regex/javascript/python only, not treesitter — cwd_max_files=%d, cwd_ignore=%s"):format(
+    ("non-buffer scopes (cwd/path/cfile/line): regex/javascript/python/perf only, not treesitter — cwd_max_files=%d, cwd_ignore=%s"):format(
       cfg.cwd_max_files or 0,
       table.concat(cfg.cwd_ignore or {}, ",")
     )

@@ -3,7 +3,7 @@
 ```lua
 require("recommender").setup({
   -- Analyzer backend
-  analyzer = "regex",           -- "regex" | "treesitter" | "javascript" | "python"
+  analyzer = "regex",           -- "regex" | "treesitter" | "javascript" | "python" | "perf"
 
   -- Minimum occurrences before a chain is suggested
   threshold = 3,

@@ -36,7 +36,7 @@ local api = vim.api
 
 ---Names accepted for `{analyzer}` positional args and `config.analyzer`.
 ---@type string[]
-local ANALYZER_NAMES = { "regex", "treesitter", "javascript", "python" }
+local ANALYZER_NAMES = { "regex", "treesitter", "javascript", "python", "perf" }
 
 ---@type table<string, boolean>
 local _is_analyzer_name = {}
@@ -70,6 +70,20 @@ end
 for _, name in ipairs(SCOPE_NAMES) do
   COMPLETION_VALUES[#COMPLETION_VALUES + 1] = name
 end
+
+---Analyzer names that support non-buffer scope (see `project.supports_cwd`),
+---computed once so the error message below can never drift out of sync with
+---`project.lua`'s actual EXTENSIONS table.
+---@type string
+local NON_BUFFER_CAPABLE_ANALYZERS = (function()
+  local names = {}
+  for _, name in ipairs(ANALYZER_NAMES) do
+    if project.supports_cwd(name) then
+      names[#names + 1] = name
+    end
+  end
+  return table.concat(names, ", ")
+end)()
 
 ---@type table<string, table>
 local _analyzer_cache = {}
@@ -212,7 +226,7 @@ local function execute(cfg, replace_mode, pos_args, cwd_flag)
         end)
       else
         if not project.supports_cwd(analyzer_name) then
-          notify.error(("%s scope isn't supported for analyzer %q — use regex, javascript, or python"):format(scope, analyzer_name))
+          notify.error(("%s scope isn't supported for analyzer %q — use one of: %s"):format(scope, analyzer_name, NON_BUFFER_CAPABLE_ANALYZERS))
           rendering.close()
           return
         end

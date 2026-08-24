@@ -25,6 +25,7 @@ local EXTENSIONS = {
   regex = { "lua" },
   javascript = { "js", "jsx", "ts", "tsx" },
   python = { "py" },
+  perf = { "lua" },
 }
 
 ---Whether `analyzer_name` supports any non-buffer scope (`cwd`, `path`,

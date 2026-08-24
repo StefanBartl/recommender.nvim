@@ -29,6 +29,7 @@ lua/recommender/
     treesitter.lua          tree-sitter-based chain counter (Lua)
     javascript.lua          regex-based chain counter (JS/TS)
     python.lua              regex-based chain counter (Python)
+    perf.lua                fixed-pattern perf anti-pattern detector (Lua), not a chain counter
 plugin/
   recommender.lua          loaded-guard
   recommender_autodoc.lua  generates doc/tags on first load if missing
