@@ -5,7 +5,9 @@
 ```vim
 :Recommender                       " use configured defaults (buffer scope)
 :Recommender treesitter            " override analyzer
-:Recommender regex 5               " regex, threshold 5
+:Recommender regex 5               " regex, threshold 5 (positional, inferred)
+:Recommender regex --threshold=5   " the same, said explicitly
+:Recommender -t 5                  " short form
 :Recommender treesitter 4 -r       " treesitter, threshold 4, replace mode
 :Recommender javascript            " JS/TS regex analyzer
 :Recommender python 4              " Python regex analyzer, threshold 4

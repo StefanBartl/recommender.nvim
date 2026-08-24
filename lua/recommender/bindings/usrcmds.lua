@@ -174,16 +174,24 @@ local ignore_by_buf = {}
 ---@param replace_mode boolean
 ---@param pos_args string[]
 ---@param cwd_flag boolean  `-c`/`--cwd`; backward-compatible alias for `scope = "cwd"`, overridden by an explicit scope positional.
+---@param flag_threshold integer|nil  `--threshold=N`; wins over a positional number.
 ---@return nil
-local function execute(cfg, replace_mode, pos_args, cwd_flag)
+local function execute(cfg, replace_mode, pos_args, cwd_flag, flag_threshold)
   local pos_analyzer, pos_threshold, pos_scope = classify_pos_args(pos_args)
   local analyzer_name = pos_analyzer or cfg.analyzer
   local scope = pos_scope or (cwd_flag and "cwd") or "buffer"
+  -- `--threshold=N` wins over a bare number. The positional form stays
+  -- because it is the documented one and order-independent, but it is
+  -- inferred: a token is a threshold when it is not a scope name, not an
+  -- analyzer name, and `tonumber`s. That is fine when typing by hand and
+  -- exactly wrong when generating the command (a keymap, another plugin),
+  -- where the intent needs saying rather than inferring.
+  local explicit_threshold = flag_threshold or pos_threshold
   -- A single line dedups each chain to at most one hit (see analyzers'
   -- per-line dedup), so config.threshold (>1 in practice) would make "line"
   -- scope silently report "no suggestions" every time. Default to 1 unless
   -- the caller explicitly typed a threshold.
-  local threshold = pos_threshold or (scope == "line" and 1) or cfg.threshold
+  local threshold = explicit_threshold or (scope == "line" and 1) or cfg.threshold
 
   -- Toggle: close if already open
   if rendering.is_open() then
@@ -226,7 +234,13 @@ local function execute(cfg, replace_mode, pos_args, cwd_flag)
         end)
       else
         if not project.supports_cwd(analyzer_name) then
-          notify.error(("%s scope isn't supported for analyzer %q — use one of: %s"):format(scope, analyzer_name, NON_BUFFER_CAPABLE_ANALYZERS))
+          notify.error(
+            ("%s scope isn't supported for analyzer %q — use one of: %s"):format(
+              scope,
+              analyzer_name,
+              NON_BUFFER_CAPABLE_ANALYZERS
+            )
+          )
           rendering.close()
           return
         end
@@ -313,7 +327,7 @@ end
 ---@return nil
 function M.setup(cfg)
   composer.verb("Recommender", {
-    desc = "Suggest local aliases for repeated chains. Flags: -r/--replace -c/--cwd [analyzer] [threshold] [scope]",
+    desc = "Suggest local aliases for repeated chains. Flags: -r/--replace -c/--cwd -t/--threshold=N [analyzer] [threshold] [scope]",
     routes = {
       {
         path = {},
@@ -325,9 +339,10 @@ function M.setup(cfg)
         flags = {
           { name = "replace", short = "r", bool = true },
           { name = "cwd", short = "c", bool = true },
+          { name = "threshold", short = "t", type = "INT" },
         },
         run = function(ctx)
-          execute(cfg, ctx.flags.replace or false, ctx.pos, ctx.flags.cwd or false)
+          execute(cfg, ctx.flags.replace or false, ctx.pos, ctx.flags.cwd or false, ctx.flags.threshold)
         end,
       },
     },

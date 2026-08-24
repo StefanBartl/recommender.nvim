@@ -24,6 +24,16 @@ Installed by `setup()` unless `config.keymaps == false` (default: enabled).
 | `<leader>lrh` | n | `:Recommender regex 5`    | Regex, threshold 5 (large files) |
 | `<leader>lrc` | n | `:Recommender -c`          | Project-wide (cwd) scope |
 
+**A count sets the threshold.** `3<leader>lrr` runs the regex analyzer with
+`--threshold=3`; `12<leader>lr` uses the configured analyzer with threshold
+12. Without a count every mapping behaves exactly as before. On
+`<leader>lrh` a count overrides its built-in 5 — that key is kept for muscle
+memory, though `5<leader>lrr` now says the same thing without a dedicated
+mapping.
+
+This is why the mappings are Lua functions rather than `<cmd>…<cr>` strings:
+a `<cmd>` mapping swallows the count prefix, with no way to read it back.
+
 ## User Commands
 
 Always defined, regardless of `config.keymaps`. Built via
@@ -33,9 +43,16 @@ helpers in `util/lib.lua`.
 
 | name | args | desc |
 | --- | --- | --- |
-| `:Recommender` | `[-r\|--replace] [-c\|--cwd] [regex\|treesitter\|javascript\|python\|perf] [threshold] [buffer\|path\|cwd\|cfile\|line]` | Toggle the suggestion float; scope changes where chains are counted (default: current buffer only; non-`buffer` scopes are regex/javascript/python/perf only) |
+| `:Recommender` | `[-r\|--replace] [-c\|--cwd] [-t\|--threshold=N] [regex\|treesitter\|javascript\|python\|perf] [threshold] [buffer\|path\|cwd\|cfile\|line]` | Toggle the suggestion float; scope changes where chains are counted (default: current buffer only; non-`buffer` scopes are regex/javascript/python/perf only) |
 
-Tab completion offers `regex`, `treesitter`, `javascript`, `python`, `perf`, `buffer`, `path`, `cwd`, `cfile`, `line`, `-r`, `--replace`, `-c`, `--cwd` in any order — any positional slot accepts an analyzer name, a scope name, or a threshold number, classified by content rather than position (see [commands.md](commands.md#scopes)). `perf` is a fixed-pattern anti-pattern detector, not a dotted-chain analyzer — see [FEATURES.md](FEATURES.md#perf-analyzer-analyzer--perf).
+Tab completion offers `regex`, `treesitter`, `javascript`, `python`, `perf`, `buffer`, `path`, `cwd`, `cfile`, `line`, `-r`, `--replace`, `-c`, `--cwd`, `-t`, `--threshold` in any order — any positional slot accepts an analyzer name, a scope name, or a threshold number, classified by content rather than position (see [commands.md](commands.md#scopes)).
+
+`--threshold=N` says outright what the bare number can only imply, and wins
+over it when both are given. The positional form is inferred: a token is a
+threshold when it is neither a scope nor an analyzer name and `tonumber`s.
+That is fine typing by hand and exactly wrong when the command is generated —
+by a keymap, or another plugin — where the intent needs stating rather than
+inferring. `perf` is a fixed-pattern anti-pattern detector, not a dotted-chain analyzer — see [FEATURES.md](FEATURES.md#perf-analyzer-analyzer--perf).
 
 ## Float Window Keymaps
 
