@@ -19,6 +19,8 @@
 
 local M = {}
 
+local globbable = require("lib.nvim.fs.globbable")
+
 ---File extensions scanned per analyzer.
 ---@type table<string, string[]>
 local EXTENSIONS = {
@@ -70,6 +72,10 @@ function M.find_files(analyzer_name, cwd, ignore, max_files)
 
   local seen = {}
   local paths = {}
+  -- Glob reads its argument as a pattern, so an 8.3 short root ("~1") is read
+  -- as a home-directory reference and matches nothing at all -- silently, with
+  -- the pcall below none the wiser. See lib.nvim.fs.globbable.
+  cwd = globbable(cwd)
   for _, ext in ipairs(exts) do
     local ok, matches = pcall(vim.fn.globpath, cwd, "**/*." .. ext, false, true)
     if ok and type(matches) == "table" then
