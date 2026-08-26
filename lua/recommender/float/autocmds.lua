@@ -4,7 +4,7 @@
 local M = {}
 
 local api = vim.api
-local autocmd = require("lib.nvim.autocmd")
+local autocmd = require("lib.nvim.bindings.autocmd")
 
 ---Register a one-shot WinClosed autocmd that fires after a TelescopePrompt window
 ---closes. Used to insert the alias after the :Replace command completes.

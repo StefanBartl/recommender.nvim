@@ -1,5 +1,5 @@
 ---@module 'recommender.bindings.usrcmds'
----@brief The `:Recommender` user command, built via lib.nvim.usercmd.composer.
+---@brief The `:Recommender` user command, built via lib.nvim.bindings.usercmd.composer.
 ---@description
 --- Parses flags/positional args, resolves the analyzer + threshold + scope,
 --- and owns the per-invocation state passed to `recommender.float.keymaps`.
@@ -23,7 +23,7 @@
 --- (see `recommender.project`) is kept as a backward-compatible alias for
 --- `scope = "cwd"`; an explicit scope positional always wins over it.
 
-local composer = require("lib.nvim.usercmd.composer")
+local composer = require("lib.nvim.bindings.usercmd.composer")
 
 local rendering = require("recommender.float.rendering")
 local keymaps_m = require("recommender.float.keymaps")

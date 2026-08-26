@@ -16,12 +16,14 @@ function M.check()
   end
 
   -- lib.nvim.notify/map (util/lib.lua) stay soft — native fallback if
-  -- absent — but lib.nvim.usercmd.composer is a hard dependency of the
+  -- absent — but lib.nvim.bindings.usercmd.composer is a hard dependency of the
   -- :Recommender command layer as of the composer migration, no fallback.
-  if pcall(require, "lib.nvim.usercmd.composer") then
-    vim.health.ok("lib.nvim.usercmd.composer available (:Recommender command layer)")
+  if pcall(require, "lib.nvim.bindings.usercmd.composer") then
+    vim.health.ok("lib.nvim.bindings.usercmd.composer available (:Recommender command layer)")
   else
-    vim.health.error(":Recommender will fail to register — lib.nvim.usercmd.composer not found; install StefanBartl/lib.nvim")
+    vim.health.error(
+      ":Recommender will fail to register — lib.nvim.bindings.usercmd.composer not found; install StefanBartl/lib.nvim"
+    )
   end
 
   local has_ts_lua = pcall(vim.treesitter.query.parse, "lua", "(field_expression) @field")

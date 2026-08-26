@@ -32,7 +32,7 @@ anti-patterns with a measured benefit (not dotted-chain repetition). See
 [Features](FEATURES.md#perf-analyzer-analyzer--perf) for the four patterns
 it looks for and why the others don't have one.
 
-Built via `lib.nvim.usercmd.composer`: a single flat root route (no
+Built via `lib.nvim.bindings.usercmd.composer`: a single flat root route (no
 subcommand word) with `-r`/`--replace` and `-c`/`--cwd` declared as
 short-flag aliases, plus three optional positional slots. Any of the three
 may hold an analyzer name, a scope name, or a threshold number, in any

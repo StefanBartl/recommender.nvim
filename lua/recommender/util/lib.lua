@@ -1,12 +1,12 @@
 ---@module 'recommender.util.lib'
 ---@brief Soft, guarded bridge to the optional `lib.nvim` helper library.
 ---@description
---- recommender.nvim prefers `lib.nvim.notify` / `lib.nvim.map` when present,
+--- recommender.nvim prefers `lib.nvim.notify` / `lib.nvim.bindings.keymap` when present,
 --- and every accessor here probes the corresponding module with `pcall` and
 --- falls back to the native Neovim API — no hard dependency on THESE specific
 --- helpers is ever introduced. `lib.nvim` as a whole, however, IS a hard
 --- dependency since the composer migration: `:Recommender` itself is
---- registered via `lib.nvim.usercmd.composer` (`bindings/usrcmds.lua`), with
+--- registered via `lib.nvim.bindings.usercmd.composer` (`bindings/usrcmds.lua`), with
 --- no raw-`nvim_create_user_command` fallback. See `docs/installation.md`.
 
 local M = {}
@@ -56,7 +56,7 @@ function M.notifier(prefix)
   }
 end
 
----Set a keymap. Uses `lib.nvim.map` if available, else `vim.keymap.set`.
+---Set a keymap. Uses `lib.nvim.bindings.keymap` if available, else `vim.keymap.set`.
 ---@param mode string|string[]
 ---@param lhs string
 ---@param rhs string|function
@@ -64,7 +64,7 @@ end
 ---@return nil
 function M.map(mode, lhs, rhs, opts)
   opts = opts or {}
-  local ok, lib_map = pcall(require, "lib.nvim.map")
+  local ok, lib_map = pcall(require, "lib.nvim.bindings.keymap")
   if ok and type(lib_map) == "function" then
     local desc = opts.desc
     opts.desc = nil

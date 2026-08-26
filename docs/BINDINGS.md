@@ -37,7 +37,7 @@ a `<cmd>` mapping swallows the count prefix, with no way to read it back.
 ## User Commands
 
 Always defined, regardless of `config.keymaps`. Built via
-`lib.nvim.usercmd.composer` (`bindings/usrcmds.lua`) — a required
+`lib.nvim.bindings.usercmd.composer` (`bindings/usrcmds.lua`) — a required
 dependency of the command layer, unlike the soft `lib.nvim.notify`/`map`
 helpers in `util/lib.lua`.
 

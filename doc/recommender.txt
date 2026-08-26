@@ -48,7 +48,7 @@ navigation, insert, yank, and batch-insert keymaps.
 
   * Neovim >= 0.9
   * lib.nvim (StefanBartl/lib.nvim) — required; `:Recommender` is registered
-    via `lib.nvim.usercmd.composer`, with no fallback (`notify`/`map`
+    via `lib.nvim.bindings.usercmd.composer`, with no fallback (`notify`/`map`
     specifically still degrade to a native fallback if somehow absent at
     that call site, but the command layer itself does not)
   * (optional) Lua Tree-sitter parser — only needed for `analyzer = "treesitter"`
@@ -305,7 +305,7 @@ detailed, 1 for compact) instead of a hardcoded line count.
   `python`, `perf`, `buffer`, `path`, `cwd`, `cfile`, `line`, `-r`,
   `--replace`, `-c`, `--cwd`.
 
-  Built via `lib.nvim.usercmd.composer`: a single flat `path = {}` root
+  Built via `lib.nvim.bindings.usercmd.composer`: a single flat `path = {}` root
   route (this grammar has no subcommand word) declares `-r`/`--replace` and
   `-c`/`--cwd` as short-flag aliases and three optional positional slots.
   Each positional token is classified by content (a scope name, then an
@@ -525,7 +525,7 @@ Internal modules can be imported directly if needed: >
 >
   :checkhealth recommender
 <
-Reports Neovim version, lib.nvim.usercmd.composer availability (required —
+Reports Neovim version, lib.nvim.bindings.usercmd.composer availability (required —
 see |recommender-requirements|), Tree-sitter Lua parser availability,
 javascript/python/perf analyzer availability, the active `cwd_ignore`/
 `cwd_max_files` settings shared by the `cwd`/`path` scopes, the active

@@ -5,7 +5,7 @@
 | Tool | Required | Purpose |
 |------|----------|---------|
 | Neovim | **>= 0.9** | core |
-| [lib.nvim](https://github.com/StefanBartl/lib.nvim) | **required** | `:Recommender` is registered via `lib.nvim.usercmd.composer`, no fallback (`notify`/`map` specifically still degrade to a native fallback if somehow absent at that call site, but the command layer itself does not) |
+| [lib.nvim](https://github.com/StefanBartl/lib.nvim) | **required** | `:Recommender` is registered via `lib.nvim.bindings.usercmd.composer`, no fallback (`notify`/`map` specifically still degrade to a native fallback if somehow absent at that call site, but the command layer itself does not) |
 | Lua Tree-sitter parser | optional | needed for `analyzer = "treesitter"` |
 
 ## lazy.nvim
