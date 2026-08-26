@@ -6,16 +6,21 @@
 ---attaches the extra actions chooser doesn't know about (y/A/<BS>/U/?),
 ---which read the highlighted suggestion via `kit.chooser.current_item()`
 ---without submitting/closing the picker.
+---
+---Those five are declared through `lib.nvim.bindings.keymap`'s registry, so
+---`float_keymaps = { yank = "Y" }` moves one and `= false` drops one -- they
+---were fixed single letters before, which is a problem in a buffer where `A`
+---and `U` are also perfectly ordinary Vim keys somebody may want back. The
+---`?` help lists what is actually bound rather than a hardcoded table, so it
+---cannot describe keys the user has moved.
 
 local notify = require("recommender.util.notify").create("[recommender]")
 local rendering = require("recommender.float.rendering")
-local lib = require("recommender.util.lib")
 local kit = require("lib.nvim.ui.kit")
 
 local M = {}
 
 local api = vim.api
-local km_set = lib.map
 local schedule = vim.schedule
 
 -- ── helpers ────────────────────────────────────────────────────────────────
@@ -119,59 +124,18 @@ end
 ---without closing), A (insert all), <BS>/U (ignore/un-ignore + refresh in
 ---place), ? (help).
 ---@param bufnr integer
----@param state table  Recommender state table (visible, ignored, replace_mode, …)
-function M.attach_extra(bufnr, state)
+---@param state table  Recommender state table (visible, ignored, replace_mode, ...)
+---@param user table|boolean|nil  `config.float_keymaps`
+---@return Lib.Keymap.Registered[]|nil
+function M.attach_extra(bufnr, state, user)
   if not bufnr or not api.nvim_buf_is_valid(bufnr) then
     return
   end
 
-  local opts = { buffer = bufnr, silent = true, nowait = true }
-
-  -- Yank selected alias to system clipboard without inserting or closing
-  km_set("n", "y", function()
-    local item = current_suggestion()
-    if not item then
-      return
-    end
-    vim.fn.setreg("+", item.alias)
-    vim.fn.setreg("*", item.alias)
-    notify.info("Yanked: " .. item.alias)
-  end, opts)
-
-  -- Insert ALL visible aliases at once into source buffer
-  km_set("n", "A", function()
-    if #state.visible == 0 then
-      return
-    end
-
-    local all_aliases = {}
-    for _, item in ipairs(state.visible) do
-      all_aliases[#all_aliases + 1] = item.alias
-    end
-
-    local target_win = find_target_window()
-    rendering.close()
-
-    schedule(function()
-      if not target_win or not api.nvim_win_is_valid(target_win) then
-        notify.warn("No suitable window for insertion")
-        return
-      end
-      api.nvim_set_current_win(target_win)
-      api.nvim_put(all_aliases, "l", false, true)
-      notify.info(("Inserted %d alias(es)"):format(#all_aliases))
-    end)
-  end, opts)
-
-  -- Ignore current entry for this buffer session
-  km_set("n", "<BS>", function()
-    local item = current_suggestion()
-    if not item then
-      return
-    end
-
-    state.ignored[item.chain] = true
-
+  ---@internal
+  ---Re-run the analysis in the source buffer, keeping the cursor where it is.
+  ---@return nil
+  local function refresh_in_place()
     state._restore_index = kit.chooser.current_index()
     local source_bufnr = state.source_bufnr
     schedule(function()
@@ -182,39 +146,123 @@ function M.attach_extra(bufnr, state)
       end
       api.nvim_buf_call(source_bufnr, state.refresh)
     end)
-  end, opts)
+  end
 
-  -- Un-ignore all → refresh
-  km_set("n", "U", function()
-    for k in pairs(state.ignored) do
-      state.ignored[k] = nil
-    end
-    state._restore_index = kit.chooser.current_index()
-    local source_bufnr = state.source_bufnr
-    schedule(function()
-      if not (source_bufnr and api.nvim_buf_is_valid(source_bufnr)) then
-        notify.warn("Source buffer no longer valid")
-        rendering.close()
-        return
-      end
-      api.nvim_buf_call(source_bufnr, state.refresh)
-    end)
-  end, opts)
+  ---@type Lib.Keymap.Registered[]
+  local bound
 
-  -- Inline help
-  km_set("n", "?", function()
-    notify.info(table.concat({
-      "Recommender keymaps:",
-      "",
-      "  j / k, ↓ / ↑   Navigate entries",
-      "  Enter           Insert selected alias",
-      "  y               Yank alias to clipboard",
-      "  A               Insert ALL visible aliases",
-      "  Backspace       Ignore entry (this session)",
-      "  U               Un-ignore all",
-      "  q / Esc         Close",
-    }, "\n"))
-  end, opts)
+  ---@type Lib.Keymap.Spec
+  local spec = {
+    order = { "yank", "insert_all", "ignore", "unignore", "help" },
+    actions = {
+      -- Yank selected alias to system clipboard without inserting or closing
+      yank = {
+        default = "y",
+        desc = "yank alias to clipboard",
+        rhs = function()
+          local item = current_suggestion()
+          if not item then
+            return
+          end
+          vim.fn.setreg("+", item.alias)
+          vim.fn.setreg("*", item.alias)
+          notify.info("Yanked: " .. item.alias)
+        end,
+      },
+
+      -- Insert ALL visible aliases at once into source buffer
+      insert_all = {
+        default = "A",
+        desc = "insert ALL visible aliases",
+        rhs = function()
+          if #state.visible == 0 then
+            return
+          end
+
+          local all_aliases = {}
+          for _, item in ipairs(state.visible) do
+            all_aliases[#all_aliases + 1] = item.alias
+          end
+
+          local target_win = find_target_window()
+          rendering.close()
+
+          schedule(function()
+            if not target_win or not api.nvim_win_is_valid(target_win) then
+              notify.warn("No suitable window for insertion")
+              return
+            end
+            api.nvim_set_current_win(target_win)
+            api.nvim_put(all_aliases, "l", false, true)
+            notify.info(("Inserted %d alias(es)"):format(#all_aliases))
+          end)
+        end,
+      },
+
+      -- Ignore current entry for this buffer session
+      ignore = {
+        default = "<BS>",
+        desc = "ignore entry (this session)",
+        rhs = function()
+          local item = current_suggestion()
+          if not item then
+            return
+          end
+          state.ignored[item.chain] = true
+          refresh_in_place()
+        end,
+      },
+
+      -- Un-ignore all -> refresh
+      unignore = {
+        default = "U",
+        desc = "un-ignore all",
+        rhs = function()
+          for k in pairs(state.ignored) do
+            state.ignored[k] = nil
+          end
+          refresh_in_place()
+        end,
+      },
+
+      -- Inline help, built from what is actually bound: a hardcoded list
+      -- would start lying the moment somebody moved one of these keys.
+      help = {
+        default = "?",
+        desc = "this help",
+        rhs = function()
+          local lines = { "Recommender keymaps:", "" }
+          -- The navigation keys belong to kit's chooser, not to this module,
+          -- so they are named rather than read back.
+          for _, l in ipairs({
+            "  j / k, arrows   Navigate entries",
+            "  Enter           Insert selected alias",
+          }) do
+            lines[#lines + 1] = l
+          end
+          for _, entry in ipairs(bound or {}) do
+            if entry.lhs and entry.bound then
+              lines[#lines + 1] = ("  %-15s %s"):format(entry.lhs, entry.desc or entry.name)
+            end
+          end
+          lines[#lines + 1] = "  q / Esc         Close"
+          notify.info(table.concat(lines, "\n"))
+        end,
+      },
+    },
+  }
+
+  ---@type table|false|nil
+  local overrides = nil
+  if type(user) == "table" or user == false then
+    overrides = user
+  end
+
+  bound = require("lib.nvim.bindings.keymap").register("Recommender", spec, overrides, {
+    buffer = bufnr,
+    surface = "float",
+  })
+  return bound
 end
 
 return M

@@ -13,6 +13,21 @@ prefix as a group; it does not register the individual keys.
 
 Installed by `setup()` unless `config.keymaps == false` (default: enabled).
 
+Each is a named action, declared through
+[`lib.nvim.bindings.keymap`](https://github.com/StefanBartl/lib.nvim) and
+individually overridable — `config.keymaps` used to be a boolean, so a
+colliding `<leader>lr` meant all eight or none:
+
+```lua
+keymaps = {
+  regex  = "<leader>zr",            -- move one
+  cwd    = { "<leader>lrc", "gR" }, -- or give it several
+  python = false,                   -- or drop it
+}
+```
+
+A misspelled action name is reported rather than silently binding nothing.
+
 | lhs | mode | action | desc |
 | --- | --- | --- | --- |
 | `<leader>lr`  | n | `:Recommender`             | Open with configured defaults |
@@ -65,17 +80,21 @@ behavior (via `on_select`) and attaches the remaining actions — the ones
 that read the highlighted suggestion without submitting/closing the
 picker — as extra buffer-local keymaps each time the float opens.
 
+Those five are named actions too, overridable via `config.float_keymaps` in
+the same shape as `config.keymaps` (`false` for none). `?` lists what is
+actually bound, so it stays correct after a remap.
+
 | lhs | action |
 | --- | --- |
 | `j` / `<Down>` | Next suggestion |
 | `k` / `<Up>`   | Previous suggestion |
 | `<CR>`         | Insert selected alias into the source buffer |
-| `y`            | Yank selected alias to `+`/`*` registers |
-| `A`            | Insert ALL visible aliases at once |
-| `<BS>`         | Ignore this entry for the current buffer session |
-| `U`            | Un-ignore all — restore dismissed suggestions |
+| `y`            | `yank` — yank selected alias to `+`/`*` registers |
+| `A`            | `insert_all` — insert ALL visible aliases at once |
+| `<BS>`         | `ignore` — ignore this entry for the current buffer session |
+| `U`            | `unignore` — restore dismissed suggestions |
 | `q` / `<Esc>`  | Close the float |
-| `?`            | Show this keymap reference via `vim.notify` |
+| `?`            | `help` — show the bound keys via `vim.notify` |
 
 Navigation moves by logical suggestion regardless of layout — 3 buffer lines
 per entry for `float_layout = "detailed"`, 1 for `"compact"` (see

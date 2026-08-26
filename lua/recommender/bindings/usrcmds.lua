@@ -310,7 +310,7 @@ local function execute(cfg, replace_mode, pos_args, cwd_flag, flag_threshold)
       local surf = rendering.open(state.visible, title, state._restore_index, cfg.float_layout, keymaps_m.make_on_select(state))
 
       if surf then
-        keymaps_m.attach_extra(surf.bufnr, state)
+        keymaps_m.attach_extra(surf.bufnr, state, cfg.float_keymaps)
       end
     end)
 

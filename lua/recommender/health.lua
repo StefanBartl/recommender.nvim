@@ -59,7 +59,7 @@ function M.check()
     )
   end
 
-  if require("recommender.bindings.which_key").available() then
+  if pcall(require, "which-key") then
     vim.health.ok("which-key found (global keymaps get a labeled <leader>lr group)")
   else
     vim.health.info("which-key not installed (optional; only labels the <leader>lr group)")

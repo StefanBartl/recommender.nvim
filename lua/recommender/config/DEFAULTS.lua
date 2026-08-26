@@ -18,6 +18,9 @@ local DEFAULTS = {
   -- Float window layout: "detailed" (chain / alias / blank, 3 lines each) or
   -- "compact" (one line per suggestion).
   float_layout = "detailed",
+  -- Keys inside the suggestion float: true = defaults, false = none, or a
+  -- table of per-action overrides (see Recommender.FloatKeymaps).
+  float_keymaps = true,
 }
 
 return DEFAULTS

@@ -1,9 +1,10 @@
 ---@module 'recommender.bindings'
 ---@brief Orchestrates recommender.nvim's bindings: usrcmds, keymaps, autocmds.
 ---@description
---- Always registers the `:Recommender` command. When `config.keymaps` is
---- true (the default) it also binds the global keymaps and labels the
---- `<leader>lr` group in which-key (no-op if not installed).
+--- Always registers the `:Recommender` command. `config.keymaps` decides what
+--- happens to the global keys: `true`/`nil` takes the defaults, `false` binds
+--- nothing, and a table overrides individual actions. Labelling the
+--- `<leader>lr` group in which-key comes with declaring them.
 
 local M = {}
 
@@ -13,10 +14,9 @@ local M = {}
 function M.setup(cfg)
   require("recommender.bindings.usrcmds").setup(cfg)
 
-  if cfg.keymaps ~= false then
-    require("recommender.bindings.keymaps").bind()
-    require("recommender.bindings.which_key").setup()
-  end
+  -- The registry handles `false` and the per-action overrides itself, and
+  -- puts the which-key group label up as part of declaring the preset.
+  require("recommender.bindings.keymaps").bind(cfg.keymaps)
 
   require("recommender.bindings.autocmds").setup(cfg)
 end
