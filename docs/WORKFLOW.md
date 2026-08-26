@@ -35,14 +35,25 @@ combine with `-c`. If you reach for `-c` on a Lua project, use `regex`, not
 `treesitter`; the command errors out immediately if you try the combination,
 rather than silently falling back.
 
-## `-c` is a counting decision, not an insertion decision
+## Scope is a positional now, and `-c` is one of five
 
-`:Recommender -c` scans every matching file under the cwd and aggregates
-counts before applying the threshold — good for surfacing a chain that
+Scope is a 5-way positional — `buffer` (the default), `path`, `cwd`, `cfile`,
+`line` — classified by content across all three positional slots rather than by
+fixed position, so `:Recommender cwd javascript 5` and `:Recommender 5
+javascript cwd` resolve identically. `-c`/`--cwd` stays as a
+backward-compatible alias for `scope=cwd`, and an explicit scope positional
+always wins over it.
+
+`line` defaults its threshold to 1 rather than to `config.threshold`, since a
+single line dedups each chain to at most one hit — the configured threshold
+would mean "never".
+
+`cwd` scans every matching file under the cwd and aggregates counts before
+applying the threshold — good for surfacing a chain that
 recurs six times across a project but never more than twice in any single
 file, which plain per-buffer scanning would miss entirely. The trap: `-c`
 does **not** change where `Enter`/`A` write the alias. Whatever suggestion
-you insert still lands in the buffer you ran `:Recommender -c` from. Running
+you insert still lands in the buffer you ran the scan from. Running
 a cwd-wide scan from the wrong buffer and then hitting `A` puts a batch of
 aliases into a file that may not even use most of those chains — check which
 buffer you're in before a cwd scan, not just which chains show up.
@@ -98,6 +109,27 @@ permanent and prefix-matched — `"vim.fn"` there means `vim.fn`, `vim.fn.expand
 "not right now, this buffer", and the blacklist for "never suggest this
 namespace" — a chain you dismiss with `Backspace` in ten different buffers
 is really telling you it belongs in the blacklist instead.
+
+## `-t`/`--threshold=N` when the number is not being typed by a person
+
+The positional threshold is *inferred*: a token counts as one when it is
+neither a scope nor an analyzer name and `tonumber`s. That is fine when you
+type it and wrong when something else assembles the command line — a mapping,
+a script, a wrapper. `-t 5` / `--threshold=5` says it outright, and the
+keymaps take a count for the same reason.
+
+## `perf`: four anti-patterns that actually measured
+
+Benchmarking this plugin's own premise found that dotted-chain aliasing has no
+measurable benefit under LuaJIT — Neovim's runtime hoists the loop-invariant
+lookup itself, and the old ~23% figure only reproduces without a JIT. That is
+worth knowing before treating a chain suggestion as a performance fix: it is a
+**readability** suggestion.
+
+The `perf` analyzer is where the measured wins went instead: `table.insert` and
+`string.format` in a loop, a self-concatenating accumulator (`x = x .. y`), and
+`ipairs` against a numeric `for`. Four fixed patterns, each with an isolated
+benchmark behind it, detected line-based.
 
 ## Custom aliases beat renaming after the fact
 
