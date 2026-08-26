@@ -81,4 +81,68 @@ return function(H)
   }
   H.eq(#analyze(twice, 3), 0, "below the threshold, nothing is reported")
   H.eq(#analyze(twice, 2), 1, "at the threshold it is")
+
+  -- The accumulator check is about *growth across iterations*, not about the
+  -- shape of the line. Both negatives below came out of the first run against a
+  -- real config, where all three "O(n^2)" findings were this and nothing else.
+  do
+    local function accum_count(lines)
+      for _, r in ipairs(perf.analyze(1, {}, {}, lines)) do
+        if r.chain:find("accumulator", 1, true) then
+          return r.count
+        end
+      end
+      return 0
+    end
+
+    H.eq(
+      accum_count({
+        'local out = ""',
+        "for _, s in ipairs(t) do",
+        "  out = out .. s",
+        "end",
+      }),
+      1,
+      "a variable declared outside the loop and appended inside it is an accumulator"
+    )
+
+    H.eq(
+      accum_count({
+        "local acc = ''",
+        "for i = 1, n do",
+        "  for j = 1, m do",
+        "    acc = acc .. x",
+        "  end",
+        "end",
+      }),
+      1,
+      "...including from inside a nested loop"
+    )
+
+    -- Re-declared every iteration, so each append starts from a fresh string.
+    H.eq(
+      accum_count({
+        "while u do",
+        "  local ident = ts_identifier_of(u)",
+        "  if ident then",
+        '    ident = ident .. "()"',
+        "  end",
+        "end",
+      }),
+      0,
+      "a local declared inside the loop cannot accumulate across iterations"
+    )
+
+    -- `dir` here is a table key being given a value built from the *outer*
+    -- `dir`; the unanchored back-reference used to read it as an assignment.
+    H.eq(
+      accum_count({
+        "for _, short in ipairs(subdirs(dir)) do",
+        '  entries[#entries + 1] = { short = short, dir = dir .. "/" .. short }',
+        "end",
+      }),
+      0,
+      "a table field is not an assignment to the variable it reads"
+    )
+  end
 end

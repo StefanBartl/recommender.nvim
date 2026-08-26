@@ -110,12 +110,39 @@ function M.analyze(threshold, custom_aliases, bl, lines)
   lines = lines or vim.api.nvim_buf_get_lines(0, 0, -1, false)
 
   local counts = {}
-  local stack = {} -- boolean per open block: true = loop, false = non-loop
+
+  -- One frame per open block: whether it is a loop, and the `local` names
+  -- declared directly in it. The names are what tell an accumulator apart
+  -- from a variable that merely looks like one -- see `declared_in_loop`.
+  ---@type { is_loop: boolean, locals: table<string, true> }[]
+  local stack = {}
 
   local function in_loop()
-    for _, is_loop in ipairs(stack) do
-      if is_loop then
+    for _, frame in ipairs(stack) do
+      if frame.is_loop then
         return true
+      end
+    end
+    return false
+  end
+
+  ---Whether `name` was declared with `local` inside the innermost enclosing
+  ---loop (or deeper). Such a variable is re-created on every iteration, so
+  ---`name = name .. y` appends to a fresh string each time and cannot grow
+  ---quadratically -- it is not an accumulator, whatever the line looks like.
+  ---
+  ---This is the shape that produced every false positive found when the
+  ---analyzer was first run across a real config: `local ident = f(node)`
+  ---followed by `ident = ident .. "()"`, three times out of three findings.
+  ---@param name string
+  ---@return boolean
+  local function declared_in_loop(name)
+    for i = #stack, 1, -1 do
+      if stack[i].locals[name] then
+        return true
+      end
+      if stack[i].is_loop then
+        return false
       end
     end
     return false
@@ -133,7 +160,12 @@ function M.analyze(threshold, custom_aliases, bl, lines)
       if line:find("string%.format%s*%(") then
         counts["string.format(...)"] = (counts["string.format(...)"] or 0) + 1
       end
-      if line:find("([%w_%.]+)%s*=%s*%1%s*%.%.") then
+      -- Anchored to the start of the line, so a table field reading an outer
+      -- variable of the same name is not mistaken for an assignment to it:
+      -- `{ short = short, dir = dir .. "/" .. short }` matched the unanchored
+      -- form, and `dir` there is a key, not the target.
+      local accum = line:match("^%s*([%w_%.]+)%s*=%s*[%w_%.]+%s*%.%.")
+      if accum and line:match("^%s*([%w_%.]+)%s*=%s*(%1)%s*%.%.") and not declared_in_loop(accum) then
         counts["x = x .. y (concat accumulator)"] = (counts["x = x .. y (concat accumulator)"] or 0) + 1
       end
     end
@@ -142,8 +174,16 @@ function M.analyze(threshold, custom_aliases, bl, lines)
       counts["ipairs(...)"] = (counts["ipairs(...)"] or 0) + 1
     end
 
+    -- Recorded before the block bookkeeping below, so a `local` on the same
+    -- line as the block opener (`for ... do local x = ...` is rare but legal)
+    -- lands in the frame it belongs to on the next line either way.
+    local declared = line:match("^%s*local%s+([%w_]+)")
+    if declared and #stack > 0 then
+      stack[#stack].locals[declared] = true
+    end
+
     if kind == "open" then
-      stack[#stack + 1] = is_loop
+      stack[#stack + 1] = { is_loop = is_loop, locals = {} }
     elseif kind == "close" then
       stack[#stack] = nil
     end
