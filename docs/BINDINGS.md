@@ -71,9 +71,7 @@ inferring. `perf` is a fixed-pattern anti-pattern detector, not a dotted-chain a
 
 ## Float Window Keymaps
 
-The float is a `lib.nvim.ui.kit.select` picker (see
-[UI-KIT-CONCEPT.md §13b](https://github.com/StefanBartl/lib.nvim/blob/main/docs/ROADMAP/UI-KIT-CONCEPT.md)
-for the rich-item design it relies on): `j`/`k`/arrows/mouse-click
+The float is a `lib.nvim.ui.kit.select` picker: `j`/`k`/arrows/mouse-click
 navigation, `<CR>`-submits, and `q`/`<Esc>`-closes come from kit.select
 itself. `lua/recommender/float/keymaps.lua` supplies `<CR>`'s actual insert
 behavior (via `on_select`) and attaches the remaining actions — the ones

@@ -38,7 +38,7 @@ doc/
 ```
 
 Cheatsheet of all keymaps/commands/autocmds: [BINDINGS.md](BINDINGS.md).
-Roadmap (currently empty — every previously tracked idea has shipped): [ROADMAP.md](ROADMAP.md).
+No open roadmap items — every previously tracked idea has shipped.
 
 ## Design principles
 
