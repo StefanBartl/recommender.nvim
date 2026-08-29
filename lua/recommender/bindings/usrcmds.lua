@@ -178,7 +178,10 @@ local ignore_by_buf = {}
 ---@return nil
 local function execute(cfg, replace_mode, pos_args, cwd_flag, flag_threshold)
   local pos_analyzer, pos_threshold, pos_scope = classify_pos_args(pos_args)
-  local analyzer_name = pos_analyzer or cfg.analyzer
+  -- `or "regex"` mirrors config/DEFAULTS.lua: the merge always fills
+  -- `analyzer`, but the option type no longer promises it now that a
+  -- partial `setup({})` is legal.
+  local analyzer_name = pos_analyzer or cfg.analyzer or "regex"
   local scope = pos_scope or (cwd_flag and "cwd") or "buffer"
   -- `--threshold=N` wins over a bare number. The positional form stays
   -- because it is the documented one and order-independent, but it is
