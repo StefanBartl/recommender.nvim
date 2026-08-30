@@ -58,3 +58,7 @@ See [docs/installation.md](docs/installation.md) for packer.nvim, vim-plug, and 
 - [Architecture](docs/architecture.md) — module layout and design principles.
 - [Bindings cheatsheet](docs/BINDINGS.md) — machine-readable reference for every keymap, command, and autocommand.
 - [Troubleshooting](docs/troubleshooting.md) — health-check and diagnostics.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
