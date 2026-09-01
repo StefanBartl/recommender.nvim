@@ -68,7 +68,12 @@ function M.map(mode, lhs, rhs, opts)
   if ok and vim.is_callable(lib_map) then
     local desc = opts.desc
     opts.desc = nil
-    local mapped = pcall(lib_map, mode, lhs, rhs, opts, desc)
+    -- `lib.nvim.bindings.keymap` exports itself as a callable table, not as a
+    -- function, so it does not satisfy `pcall`'s first parameter -- same shape
+    -- as `vim.cmd`, same closure form.
+    local mapped = pcall(function()
+      lib_map(mode, lhs, rhs, opts, desc)
+    end)
     if mapped then
       return
     end

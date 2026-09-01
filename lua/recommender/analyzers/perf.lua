@@ -183,6 +183,9 @@ function M.analyze(threshold, custom_aliases, bl, lines)
     end
 
     if kind == "open" then
+      -- `classify` answers with a boolean for "open"/"single" and nil for the
+      -- kinds where the question does not apply; this is the "open" branch.
+      ---@cast is_loop boolean
       stack[#stack + 1] = { is_loop = is_loop, locals = {} }
     elseif kind == "close" then
       stack[#stack] = nil

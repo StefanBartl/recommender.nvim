@@ -91,7 +91,7 @@ local _analyzer_cache = {}
 ---@internal
 ---Load an analyzer backend by name, with error propagation.
 ---Results are cached so the module is only required once per session.
----@param name "regex"|"treesitter"|"javascript"|"python"
+---@param name "regex"|"treesitter"|"javascript"|"python"|"perf" One of `ANALYZER_NAMES` above, which is what the command line validates against.
 ---@return table
 local function get_analyzer(name)
   if _analyzer_cache[name] then
@@ -155,7 +155,9 @@ local function resolve_cfile(cfile, bufnr)
     end
   end
 
-  local found = vim.fn.findfile(cfile, vim.o.path)
+  -- `findfile` answers with a list only when it is given a count; this call
+  -- passes none, so the string form is what comes back.
+  local found = vim.fn.findfile(cfile, vim.o.path) --[[@as string]]
   if found ~= "" and vim.fn.filereadable(found) == 1 then
     return vim.fn.fnamemodify(found, ":p"), nil
   end
@@ -277,7 +279,9 @@ local function execute(cfg, replace_mode, pos_args, cwd_flag, flag_threshold)
         elseif scope == "cfile" then
           local path, path_err = resolve_cfile(state.cfile_raw, state.source_bufnr)
           if not path then
-            notify.error(path_err)
+            -- The value and the message share the call: a failure without a
+            -- message would otherwise notify `nil`.
+            notify.error(path_err or "no readable file under the cursor")
             rendering.close()
             return
           end

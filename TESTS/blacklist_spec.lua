@@ -9,6 +9,8 @@ return function(H)
   local bl = require("recommender.blacklist")
 
   -- No list at all -----------------------------------------------------------
+  -- Deliberately the wrong argument: what is under test is that it copes.
+  ---@diagnostic disable-next-line: param-type-mismatch
   H.falsy(bl.is_blacklisted("vim.api.nvim_buf_get_lines", nil), "nil list blocks nothing")
   H.falsy(bl.is_blacklisted("vim.api.nvim_buf_get_lines", {}), "empty list blocks nothing")
 

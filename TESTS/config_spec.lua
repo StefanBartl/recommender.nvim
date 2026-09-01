@@ -19,13 +19,16 @@ return function(H)
   -- Deep merge ----------------------------------------------------------------
   -- Nested tables merge key by key rather than being replaced wholesale, so
   -- setting one sub-option does not silently drop its siblings.
-  if type(DEFAULTS.float) == "table" then
-    local sub = next(DEFAULTS.float)
+  -- Was written against `DEFAULTS.float`, which this config has never had --
+  -- so the whole case was skipped by its own guard and proved nothing.
+  -- `custom_aliases` is the nested table the rule is actually about.
+  if type(DEFAULTS.custom_aliases) == "table" then
+    local sub = next(DEFAULTS.custom_aliases)
     if sub then
-      local deep = config.setup({ float = { [sub] = DEFAULTS.float[sub] } })
+      local deep = config.setup({ custom_aliases = { [sub] = DEFAULTS.custom_aliases[sub] } })
       local kept = 0
-      for k in pairs(DEFAULTS.float) do
-        if deep.float[k] ~= nil then
+      for k in pairs(DEFAULTS.custom_aliases) do
+        if deep.custom_aliases[k] ~= nil then
           kept = kept + 1
         end
       end
