@@ -11,6 +11,7 @@ lua/recommender/
   util/
     notify.lua             prefixed vim.notify wrapper (via util/lib.lua)
     lib.lua                soft bridge to lib.nvim (notify/map), with fallback
+    progress.lua           soft bridge to lib.nvim.progress, for the async cwd/path scan
   bindings/
     init.lua               orchestrates usrcmds/keymaps/which_key/autocmds
     usrcmds.lua             :Recommender command + per-invocation state
@@ -23,7 +24,7 @@ lua/recommender/
     autocmds.lua            one-shot WinClosed hook for replace-mode finish detection
   blacklist.lua             prefix matching + default blacklist
   custom_aliases.lua        built-in alias map
-  project.lua               file discovery for cwd/path/cfile scopes
+  project.lua               file discovery for cwd/path/cfile scopes (async for cwd/path, see below)
   analyzers/
     regex.lua               regex-based chain counter (Lua)
     treesitter.lua          tree-sitter-based chain counter (Lua)
@@ -48,3 +49,9 @@ No open roadmap items — every previously tracked idea has shipped.
 - **Per-buffer ignore state** — ignores are stored by bufnr, not globally.
 - **No deprecated API** — uses `vim.bo` / `vim.wo` throughout.
 - **Toggle pattern** — `:Recommender` while open closes the float; no extra close command.
+- **Async `cwd`/`path` scanning** — `project.find_files_async` (`vim.uv.fs_scandir`)
+  and `project.read_lines_async` (batched, `vim.schedule`-yielded) never block
+  the editor; `util/progress.lua` (soft `lib.nvim.progress` bridge,
+  `config.progress_style`) tracks both phases. A module-level generation
+  counter in `bindings/usrcmds.lua` cancels a still-running scan whenever a
+  newer one supersedes it, so two scans never race to open a float.

@@ -28,11 +28,25 @@ local composer = require("lib.nvim.bindings.usercmd.composer")
 local rendering = require("recommender.float.rendering")
 local keymaps_m = require("recommender.float.keymaps")
 local project = require("recommender.project")
+local progress = require("recommender.util.progress")
 local notify = require("recommender.util.notify").create("[recommender]")
 
 local M = {}
 
 local api = vim.api
+
+-- Module-level, not per-invocation: a `cwd`/`path` scan reads potentially
+-- hundreds of files asynchronously (see `project.read_lines_async`), so a
+-- second `:Recommender` invocation -- or an ignore/un-ignore-triggered
+-- refresh (`float/keymaps.lua`'s `refresh_in_place`) -- can easily land
+-- while the first scan is still in flight. Bumping this generation on every
+-- new scan makes the previous one's `is_cancelled` check true, so its
+-- `on_done` becomes a no-op instead of racing the new scan to open a float.
+---@type integer
+local _scan_generation = 0
+
+---@type table|nil  the progress handle for the currently in-flight scan, if any
+local _active_progress_handle = nil
 
 ---Names accepted for `{analyzer}` positional args and `config.analyzer`.
 ---@type string[]
@@ -223,76 +237,14 @@ local function execute(cfg, replace_mode, pos_args, cwd_flag, flag_threshold)
   }
 
   function state.refresh()
-    local ok, err = pcall(function()
-      if not (state.source_bufnr and api.nvim_buf_is_valid(state.source_bufnr)) then
-        notify.warn("Source buffer is no longer valid")
-        rendering.close()
-        return
-      end
+    local analyzer = get_analyzer(analyzer_name)
 
-      local analyzer = get_analyzer(analyzer_name)
-      local all
-
-      if scope == "buffer" then
-        api.nvim_buf_call(state.source_bufnr, function()
-          all = analyzer.analyze(threshold, state.custom_aliases, state.blacklist)
-        end)
-      else
-        if not project.supports_cwd(analyzer_name) then
-          notify.error(
-            ("%s scope isn't supported for analyzer %q — use one of: %s"):format(
-              scope,
-              analyzer_name,
-              NON_BUFFER_CAPABLE_ANALYZERS
-            )
-          )
-          rendering.close()
-          return
-        end
-
-        local lines
-
-        if scope == "cwd" or scope == "path" then
-          local root
-          if scope == "cwd" then
-            root = vim.fn.getcwd()
-          else
-            local bufname = api.nvim_buf_get_name(state.source_bufnr)
-            if bufname == "" then
-              notify.error("path scope requires the current buffer to have a file path")
-              rendering.close()
-              return
-            end
-            root = vim.fn.fnamemodify(bufname, ":p:h")
-          end
-
-          local paths, truncated = project.find_files(analyzer_name, root, cfg.cwd_ignore, cfg.cwd_max_files)
-          if #paths == 0 then
-            notify.info(("No matching files found under %s"):format(root))
-            rendering.close()
-            return
-          end
-          if truncated then
-            notify.warn(("%s scan capped at %d files (config.cwd_max_files)"):format(scope, cfg.cwd_max_files))
-          end
-          lines = project.read_lines(paths)
-        elseif scope == "cfile" then
-          local path, path_err = resolve_cfile(state.cfile_raw, state.source_bufnr)
-          if not path then
-            -- The value and the message share the call: a failure without a
-            -- message would otherwise notify `nil`.
-            notify.error(path_err or "no readable file under the cursor")
-            rendering.close()
-            return
-          end
-          lines = project.read_lines({ path })
-        else -- "line"
-          lines = { state.cursor_line_text or "" }
-        end
-
-        all = analyzer.analyze(threshold, state.custom_aliases, state.blacklist, lines)
-      end
-
+    ---@internal
+    ---Shared tail once `all` is known: filter ignored entries, then open (or
+    ---report empty). Called synchronously for buffer/cfile/line scope, and
+    ---from `project.read_lines_async`'s `on_done` for cwd/path.
+    ---@param all {chain:string, count:integer, alias:string}[]
+    local function finish(all)
       state.visible = {}
       for _, s in ipairs(all) do
         if not state.ignored[s.chain] then
@@ -319,12 +271,179 @@ local function execute(cfg, replace_mode, pos_args, cwd_flag, flag_threshold)
       if surf then
         keymaps_m.attach_extra(surf.bufnr, state, cfg.float_keymaps)
       end
-    end)
-
-    if not ok then
-      notify.error("Error: " .. tostring(err))
-      rendering.close()
     end
+
+    ---@internal
+    ---Run `body`, reporting any error the same way regardless of which
+    ---scope branch raised it -- the sync ones directly below, and the async
+    ---cwd/path one again from its own `on_done` (the outer `pcall` around
+    ---*this* call has long since returned by the time that fires).
+    ---@param body fun()
+    local function guarded(body)
+      local ok, err = pcall(body)
+      if not ok then
+        notify.error("Error: " .. tostring(err))
+        rendering.close()
+      end
+    end
+
+    guarded(function()
+      if not (state.source_bufnr and api.nvim_buf_is_valid(state.source_bufnr)) then
+        notify.warn("Source buffer is no longer valid")
+        rendering.close()
+        return
+      end
+
+      if scope == "buffer" then
+        local all
+        api.nvim_buf_call(state.source_bufnr, function()
+          all = analyzer.analyze(threshold, state.custom_aliases, state.blacklist)
+        end)
+        finish(all)
+        return
+      end
+
+      if not project.supports_cwd(analyzer_name) then
+        notify.error(
+          ("%s scope isn't supported for analyzer %q — use one of: %s"):format(
+            scope,
+            analyzer_name,
+            NON_BUFFER_CAPABLE_ANALYZERS
+          )
+        )
+        rendering.close()
+        return
+      end
+
+      if scope == "cwd" or scope == "path" then
+        local root
+        if scope == "cwd" then
+          root = vim.fn.getcwd()
+        else
+          local bufname = api.nvim_buf_get_name(state.source_bufnr)
+          if bufname == "" then
+            notify.error("path scope requires the current buffer to have a file path")
+            rendering.close()
+            return
+          end
+          root = vim.fn.fnamemodify(bufname, ":p:h")
+        end
+
+        -- Both the directory walk (`find_files_async`) and the file reads
+        -- (`read_lines_async`) that follow are async, with a
+        -- `config.progress_style` indicator tracking the whole thing -- see
+        -- `project.lua`. The walk is usually the slower, more variable half
+        -- (a cold directory-entry cache, or per-open AV/EDR scanning on
+        -- Windows), so it gets its own indicator phase rather than only
+        -- covering the read.
+        --
+        -- A newer scan (another invocation, or an ignore/un-ignore-triggered
+        -- refresh) supersedes whatever is still running -- see the
+        -- module-level `_scan_generation` comment near the top of this file.
+        if _active_progress_handle then
+          _active_progress_handle:cancel("superseded by a new scan")
+        end
+        _scan_generation = _scan_generation + 1
+        local my_generation = _scan_generation
+
+        local handle = progress.create(cfg.progress_style)
+        _active_progress_handle = handle
+        if handle then
+          handle:update({ text = "scanning directories" })
+          -- The "float"/"kit" progress styles wire <Esc> to request_cancel();
+          -- bumping the generation here is what actually stops the walk/read
+          -- from continuing, not just what hides the indicator.
+          handle:on_cancel(function()
+            _scan_generation = _scan_generation + 1
+          end)
+        end
+
+        local function is_cancelled()
+          return my_generation ~= _scan_generation
+        end
+
+        local function start_read(paths)
+          if handle then
+            handle:update({ text = ("scanning %d files"):format(#paths), current = 0, total = #paths })
+          end
+
+          project.read_lines_async(paths, {
+            is_cancelled = is_cancelled,
+            on_progress = function(done, scanned_total)
+              if handle then
+                handle:update({
+                  text = ("%d/%d files"):format(done, scanned_total),
+                  current = done,
+                  total = scanned_total,
+                })
+              end
+            end,
+            on_done = function(lines)
+              if _active_progress_handle == handle then
+                _active_progress_handle = nil
+              end
+              if handle then
+                handle:finish(("scanned %d files"):format(#paths))
+              end
+              -- Belt-and-braces: read_lines_async already stops calling
+              -- batches (and never calls on_done at all) once is_cancelled()
+              -- turns true -- kept so a future change to that scheduling
+              -- can't silently open a float behind whatever superseded it.
+              if is_cancelled() then
+                return
+              end
+              guarded(function()
+                finish(analyzer.analyze(threshold, state.custom_aliases, state.blacklist, lines))
+              end)
+            end,
+          })
+        end
+
+        project.find_files_async(analyzer_name, root, cfg.cwd_ignore, cfg.cwd_max_files, {
+          is_cancelled = is_cancelled,
+          on_progress = function(dirs_scanned, files_found)
+            if handle then
+              handle:update({ text = ("scanning directories (%d found, %d files)"):format(dirs_scanned, files_found) })
+            end
+          end,
+          on_done = function(paths, truncated)
+            if #paths == 0 then
+              if _active_progress_handle == handle then
+                _active_progress_handle = nil
+              end
+              if handle then
+                handle:cancel("no matching files found")
+              end
+              notify.info(("No matching files found under %s"):format(root))
+              rendering.close()
+              return
+            end
+            if truncated then
+              notify.warn(("%s scan capped at %d files (config.cwd_max_files)"):format(scope, cfg.cwd_max_files))
+            end
+            start_read(paths)
+          end,
+        })
+        return
+      end
+
+      local lines
+      if scope == "cfile" then
+        local path, path_err = resolve_cfile(state.cfile_raw, state.source_bufnr)
+        if not path then
+          -- The value and the message share the call: a failure without a
+          -- message would otherwise notify `nil`.
+          notify.error(path_err or "no readable file under the cursor")
+          rendering.close()
+          return
+        end
+        lines = project.read_lines({ path })
+      else -- "line"
+        lines = { state.cursor_line_text or "" }
+      end
+
+      finish(analyzer.analyze(threshold, state.custom_aliases, state.blacklist, lines))
+    end)
   end
 
   vim.schedule(state.refresh)

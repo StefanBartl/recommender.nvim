@@ -59,6 +59,15 @@ function M.check()
     )
   end
 
+  if require("recommender.util.progress").available() then
+    vim.health.ok(("lib.nvim.progress available — progress_style = %q is functional"):format(cfg.progress_style or "auto"))
+  else
+    vim.health.info(
+      "lib.nvim.progress not found — progress_style has no effect; cwd/path scope scans "
+        .. "still run (asynchronously), just without an indicator"
+    )
+  end
+
   if pcall(require, "which-key") then
     vim.health.ok("which-key found (global keymaps get a labeled <leader>lr group)")
   else

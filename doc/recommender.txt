@@ -19,6 +19,7 @@ CONTENTS                                        *recommender-contents*
      5.6 cwd_ignore ............ |recommender-config-cwd-ignore|
      5.7 cwd_max_files ......... |recommender-config-cwd-max-files|
      5.8 float_layout .......... |recommender-config-float-layout|
+     5.9 progress_style ........ |recommender-config-progress-style|
   6. Command ................... |:Recommender|
   7. Float keymaps ............. |recommender-float-keymaps|
   8. Replace mode .............. |recommender-replace-mode|
@@ -225,8 +226,10 @@ specific to your projects.
   cwd_max_files = 500   -- 0 = unbounded
 <
 Safety cap on the number of files a `cwd`/`path` scope scan reads. The scan
-is synchronous (no async job machinery in this plugin), so this bounds how
-long such an invocation can take on a very large repository/directory. If
+itself is asynchronous (see |recommender-config-progress-style| and
+|recommender-scopes|) and never blocks the editor regardless of this
+setting; the cap exists to bound how much of the tree — and how many stale
+results — one invocation covers on a very large repository/directory. If
 the cap is hit, a warning names `cwd_max_files` as the key to raise.
 
 ------------------------------------------------------------------------------
@@ -246,6 +249,33 @@ Controls how suggestions are rendered in the float window (see
 Every float keymap (navigation, insert, yank, ignore, …) works identically
 in both layouts — `float/keymaps.lua` reads `rendering.stride` (3 for
 detailed, 1 for compact) instead of a hardcoded line count.
+
+------------------------------------------------------------------------------
+5.9 progress_style                *recommender-config-progress-style*
+>
+  progress_style = "auto"
+    -- "auto" | "notify" | "statusline" | "fidget" | "float" | "kit"
+<
+Indicator shown while a `cwd`/`path` scope scan runs (see
+|recommender-scopes|): both the directory walk and the file reads are
+asynchronous, so this is purely visual, never a blocking wait.
+
+  `"auto"`        (default) `vim.notify`, or fidget.nvim's LSP-style
+                  progress if installed.
+  `"notify"`      Plain `vim.notify`.
+  `"statusline"`  Headless — read `lib.nvim.progress.styles.statusline`
+                  from your own statusline component.
+  `"fidget"`      Delegates to fidget.nvim.
+  `"float"`       Small floating window; focus it and press <Esc> to
+                  cancel the scan.
+  `"kit"`         Same interaction as `"float"`, themed via
+                  `lib.nvim.ui.kit`.
+
+Needs `lib.nvim.progress`; a no-op otherwise (the scan still runs, just
+without an indicator — see |recommender-health|). Cancelling (via the
+`"float"`/`"kit"` styles) or starting a newer scan before this one finishes
+abandons it — see `bindings/usrcmds.lua`'s module-level scan generation
+counter (|recommender-architecture|).
 
 ==============================================================================
 6. COMMAND                                                    *:Recommender*
@@ -391,8 +421,12 @@ explicit `{scope}` positional always wins over it.
 Directories are skipped by exact name match via `config.cwd_ignore` (see
 |recommender-config-cwd-ignore|), and the scan is capped at
 `config.cwd_max_files` (see |recommender-config-cwd-max-files|) files —
-a warning names the config key to raise if the cap is hit. The scan is
-synchronous, matching the rest of this plugin (no async job machinery).
+a warning names the config key to raise if the cap is hit. Both the
+directory walk and the file reads are asynchronous — the editor never
+blocks, however large the tree — with `config.progress_style` (see
+|recommender-config-progress-style|) tracking it. A second scan (another
+invocation, or an ignore/un-ignore refresh) supersedes whatever is still
+running rather than racing it to open a float.
 
 ------------------------------------------------------------------------------
 9.2 cfile                                         *recommender-cfile-scope*
@@ -530,9 +564,10 @@ see |recommender-requirements|), Tree-sitter Lua parser availability,
 javascript/python/perf analyzer availability, the active `cwd_ignore`/
 `cwd_max_files` settings shared by the `cwd`/`path` scopes, the active
 `float_layout`, plugin-loaded state, lib.nvim.notify/which-key detection
-(soft, cosmetic only), whether
-global keymaps are enabled, and whether a `:Replace` command is available
-for replace mode.
+and lib.nvim.progress availability (soft, cosmetic only — the async
+`cwd`/`path` scan itself never depends on it, only `progress_style`'s
+indicator does), whether global keymaps are enabled, and whether a
+`:Replace` command is available for replace mode.
 
 ==============================================================================
 13. ARCHITECTURE                              *recommender-architecture*
@@ -548,9 +583,11 @@ for replace mode.
     util/
       notify.lua             prefixed vim.notify wrapper (via util/lib.lua)
       lib.lua                soft bridge to lib.nvim (notify/map), fallback
+      progress.lua           soft bridge to lib.nvim.progress (async cwd/path scan)
     bindings/
       init.lua               orchestrates usrcmds/keymaps/which_key/autocmds
-      usrcmds.lua            :Recommender command + per-invocation state
+      usrcmds.lua            :Recommender command + per-invocation state;
+                             owns the cwd/path scan's cancel/supersede generation
       keymaps.lua            global keymaps (config.keymaps ~= false)
       which_key.lua          optional which-key group label
       autocmds.lua           empty (structural symmetry only)
@@ -560,7 +597,8 @@ for replace mode.
       autocmds.lua           one-shot WinClosed hook (replace-mode)
     blacklist.lua            prefix matching + default list
     custom_aliases.lua       built-in chain → alias name map
-    project.lua              file discovery for cwd/path/cfile scopes
+    project.lua              file discovery for cwd/path/cfile scopes;
+                             find_files_async/read_lines_async for cwd/path
     analyzers/
       regex.lua              regex-based scanner (Lua)
       treesitter.lua         Tree-sitter-based scanner (Lua)

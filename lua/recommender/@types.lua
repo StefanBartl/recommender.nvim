@@ -13,6 +13,7 @@
 ---@field keymaps?        boolean|Recommender.Keymaps  Global keymaps: `true`/`nil` defaults, `false` none, or per-action overrides (default: true)
 ---@field cwd_ignore?     string[]              Directory names skipped (any depth) by `cwd`/`path` scope scans
 ---@field cwd_max_files?  integer               Cap on files read by `cwd`/`path` scope scans (default: 500; 0 = unbounded)
+---@field progress_style? "auto"|"notify"|"statusline"|"fidget"|"float"|"kit"  Indicator for the async `cwd`/`path` scope scan (default: "auto"); needs lib.nvim.progress, no-op without it
 ---@field float_layout?   "detailed"|"compact"  Float window layout (default: "detailed")
 ---@field float_keymaps?  boolean|Recommender.FloatKeymaps  Keys inside the suggestion float (default: true)
 

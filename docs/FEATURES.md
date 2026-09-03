@@ -94,7 +94,18 @@ touching the buffer or `cwd`; `line` is a quick single-line check.
 
 - **Module:** `project.lua`
 - **Usercmds:** `:Recommender cwd` / `:Recommender path` / `:Recommender cfile` / `:Recommender line` (`-c`/`--cwd` is a backward-compatible flag alias for `cwd`)
-- **Config:** `opts.cwd_ignore` (skip-list for `cwd`/`path`, default covers `.git`, `node_modules`, `.venv`, etc.), `opts.cwd_max_files` (safety cap for `cwd`/`path`, default `500`, `0` = unbounded)
+- **Config:** `opts.cwd_ignore` (skip-list for `cwd`/`path`, default covers `.git`, `node_modules`, `.venv`, etc.), `opts.cwd_max_files` (safety cap for `cwd`/`path`, default `500`, `0` = unbounded), `opts.progress_style` (indicator while a `cwd`/`path` scan runs, default `"auto"`)
+
+A `cwd`/`path` scan is asynchronous: both the directory walk and the file
+reads run through `vim.uv`/`vim.schedule` in small increments instead of one
+blocking pass, so `:Recommender cwd`/`path` never freezes the editor,
+however large the tree or however many files `cwd_max_files` lets through —
+this matters most for `perf` run project-wide, since it's the one analyzer
+people reach for over a whole config or codebase rather than one buffer. A
+second scan (another invocation, or the ignore/un-ignore keys re-running the
+current one) cancels whichever scan is still in flight rather than racing it
+to open a float. `opts.progress_style` (default `"auto"`) surfaces it — see
+[Configuration](configuration.md#async-cwdpath-scanning).
 
 `Enter`/`A` still insert into the *current* buffer regardless of scope —
 scope only changes where chains are counted. Only the regex-based analyzers

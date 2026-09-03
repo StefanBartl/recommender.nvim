@@ -33,11 +33,28 @@ require("recommender").setup({
   -- Safety cap on files read by a `cwd`/`path` scope scan (0 = unbounded)
   cwd_max_files = 500,
 
+  -- Indicator while a `cwd`/`path` scope scan runs (it's asynchronous, see
+  -- below): "auto" | "notify" | "statusline" | "fidget" | "float" | "kit".
+  -- Needs lib.nvim.progress; no-op without it.
+  progress_style = "auto",
+
   -- Float window layout: "detailed" (chain / alias / blank, 3 lines each)
   -- or "compact" (one line per suggestion)
   float_layout = "detailed",
 })
 ```
+
+## Async `cwd`/`path` scanning
+
+A `cwd`/`path` scope scan (directory walk + file reads) runs asynchronously
+— it never blocks the editor, however many files it touches. Set
+`progress_style` to see it happen: `"statusline"` reads
+`lib.nvim.progress.styles.statusline` from your own statusline component
+(that's what every other `progress_style`-using plugin in this ecosystem
+does — see [Architecture](architecture.md)); `"float"`/`"kit"` show a small
+window with an `<Esc>`-to-cancel keymap. See
+[Features](FEATURES.md#scopes-buffer-default-path-cwd-cfile-line) for what's
+actually async and why.
 
 ## Float layout
 

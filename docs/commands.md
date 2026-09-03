@@ -95,6 +95,11 @@ any depth; defaults cover `.git`, `node_modules`, `.venv`, etc.) and
 `cwd_max_files` (safety cap, default `500`; `0` = unbounded). If the cap is
 hit, a warning names the config key to raise.
 
+Both scans run asynchronously — walking the directory tree and reading the
+matching files never blocks Neovim, no matter how many files are involved.
+`progress_style` (default `"auto"`) shows an indicator while it runs; see
+[Configuration](configuration.md#async-cwdpath-scanning).
+
 ## Float window keymaps
 
 | Key | Action |

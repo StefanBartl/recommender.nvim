@@ -55,4 +55,18 @@ function H.scratch(lines)
   return buf
 end
 
+--- Pump the event loop (via `vim.wait`) until `predicate()` is truthy, or
+--- fail with a descriptive error once `timeout_ms` elapses. For code that
+--- finishes via `vim.schedule` chains (e.g. `project.read_lines_async`)
+--- rather than returning a value directly.
+---@param predicate fun(): boolean
+---@param msg string|nil
+---@param timeout_ms integer|nil  default 2000
+function H.wait_until(predicate, msg, timeout_ms)
+  local ok = vim.wait(timeout_ms or 2000, predicate, 5)
+  if not ok then
+    error(("FAIL %s: condition never became true within %dms"):format(msg or "", timeout_ms or 2000), 2)
+  end
+end
+
 return H
