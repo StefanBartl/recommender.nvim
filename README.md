@@ -51,6 +51,9 @@ See [docs/installation.md](docs/installation.md) for packer.nvim, vim-plug, and 
 
 ## Documentation
 
+Start at [docs/README.md](docs/README.md), which says what is where and which
+question each page answers.
+
 - [Features](docs/FEATURES.md) — what the plugin does, at a glance.
 - [Installation](docs/installation.md) — requirements and setup for lazy.nvim, packer.nvim, and vim-plug.
 - [Configuration](docs/configuration.md) — all `setup()` options, defaults, and the default global keymaps.
@@ -59,6 +62,7 @@ See [docs/installation.md](docs/installation.md) for packer.nvim, vim-plug, and 
 - [Architecture](docs/architecture.md) — module layout and design principles.
 - [Bindings cheatsheet](docs/BINDINGS.md) — machine-readable reference for every keymap, command, and autocommand.
 - [Troubleshooting](docs/troubleshooting.md) — health-check and diagnostics.
+- [Workflow](docs/WORKFLOW.md) — when to run the analysis and what to do with the answer, rather than what it reports.
 
 ## License
 
