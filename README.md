@@ -13,7 +13,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Neovim](https://img.shields.io/badge/Neovim-0.9%2B-57A143?logo=neovim&logoColor=white)](https://neovim.io)
 [![Lua](https://img.shields.io/badge/Lua-5.1%2FLuaJIT-2C2D72?logo=lua&logoColor=white)](https://www.lua.org)
-![Status](https://img.shields.io/badge/status-active%20development-blue)
+![Status](https://img.shields.io/badge/status-alpha-red)
 
 > Pairs well with [replacer.nvim](https://github.com/StefanBartl/replacer.nvim), which provides the `:Replace` command used by [replace mode](docs/commands.md#replace-mode).
 
