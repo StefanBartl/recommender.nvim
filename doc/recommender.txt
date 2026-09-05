@@ -1,7 +1,7 @@
 *recommender.txt*  Lua alias suggester for Neovim.
 
                                                              *recommender.nvim*
-                                                             *recommender*
+                                                             recommender
 
 ==============================================================================
 CONTENTS                                        *recommender-contents*
