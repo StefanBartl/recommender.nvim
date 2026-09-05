@@ -12,7 +12,7 @@ function M.check()
   if vim.fn.has("nvim-0.9") == 1 then
     vim.health.ok("Neovim >= 0.9")
   else
-    vim.health.warn("Neovim 0.9+ required")
+    vim.health.error("Neovim 0.9+ required", { "Upgrade Neovim to 0.9+" })
   end
 
   -- lib.nvim.notify/map (util/lib.lua) stay soft — native fallback if
@@ -22,7 +22,8 @@ function M.check()
     vim.health.ok("lib.nvim.bindings.usercmd.composer available (:Recommender command layer)")
   else
     vim.health.error(
-      ":Recommender will fail to register — lib.nvim.bindings.usercmd.composer not found; install StefanBartl/lib.nvim"
+      ":Recommender will fail to register — lib.nvim.bindings.usercmd.composer not found",
+      { "Install StefanBartl/lib.nvim" }
     )
   end
 
@@ -47,7 +48,7 @@ function M.check()
   if vim.g.loaded_recommender then
     vim.health.ok("plugin loaded (vim.g.loaded_recommender = " .. tostring(vim.g.loaded_recommender) .. ")")
   else
-    vim.health.warn("plugin guard not set — call require('recommender').setup()")
+    vim.health.info("plugin guard not set (call require('recommender').setup())")
   end
 
   if require("recommender.util.lib").available() then
