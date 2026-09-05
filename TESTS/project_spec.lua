@@ -119,6 +119,7 @@ return function(H)
     local saw_a_directory = false
     local on_done_called = false
     project.find_files_async("regex", root, {}, 0, {
+      ---@type fun(): boolean
       is_cancelled = function()
         return saw_a_directory
       end,
@@ -171,6 +172,7 @@ return function(H)
     H.wait_until(function()
       return async_lines ~= nil
     end, "read_lines_async never called on_done")
+    ---@cast async_lines -nil
 
     H.eq(#async_lines, 2, "same result as the sync read_lines, over two batches")
     H.ok(vim.tbl_contains(async_lines, "local x = vim.fn.getcwd()"), "file contents come through unchanged")

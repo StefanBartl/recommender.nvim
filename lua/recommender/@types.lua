@@ -44,4 +44,17 @@
 ---@field count integer  Occurrence count in the scanned scope
 ---@field alias string   Rendered "local <name> = <chain>" declaration, or (for "perf") an advisory "-- perf: ..." comment
 
+--- Options for `recommender.project.find_files_async`.
+---@class Recommender.FindFilesAsyncOpts
+---@field on_progress?  fun(dirs_scanned:integer, files_found:integer)
+---@field is_cancelled? fun():boolean
+---@field on_done       fun(paths:string[], truncated:boolean)
+
+--- Options for `recommender.project.read_lines_async`.
+---@class Recommender.ReadLinesAsyncOpts
+---@field batch_size?   integer
+---@field on_progress?  fun(done:integer, total:integer)
+---@field on_done       fun(lines:string[])
+---@field is_cancelled? fun():boolean
+
 return {}

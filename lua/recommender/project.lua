@@ -161,7 +161,7 @@ end
 ---@param root string
 ---@param ignore string[]
 ---@param max_files integer  0 (or nil) means unbounded
----@param opts { on_progress?: fun(dirs_scanned:integer, files_found:integer), is_cancelled?: fun():boolean, on_done: fun(paths:string[], truncated:boolean) }
+---@param opts Recommender.FindFilesAsyncOpts
 ---@return nil
 function M.find_files_async(analyzer_name, root, ignore, max_files, opts)
   local exts = EXTENSIONS[analyzer_name]
@@ -307,7 +307,7 @@ local DEFAULT_BATCH_SIZE = 20
 ---scan that a newer `:Recommender` invocation, or the user via the "float"/
 ---"kit" progress style's cancel keymap, has superseded.
 ---@param paths string[]
----@param opts { batch_size?: integer, on_progress?: fun(done:integer, total:integer), on_done: fun(lines:string[]), is_cancelled?: fun():boolean }
+---@param opts Recommender.ReadLinesAsyncOpts
 ---@return nil
 function M.read_lines_async(paths, opts)
   local batch_size = (opts.batch_size and opts.batch_size > 0) and opts.batch_size or DEFAULT_BATCH_SIZE
