@@ -27,6 +27,12 @@ require("recommender").setup({
   -- Install default global keymaps (set false to manage keymaps yourself)
   keymaps = true,
 
+  -- Extra keymaps inside the suggestion float (yank/apply/backspace/undo/help
+  -- — navigation and submit/close are lib.nvim.ui.kit's chooser itself, not
+  -- listed here). true = defaults; false drops all five; a table remaps or
+  -- drops individual ones, e.g. { yank = "Y" }. See BINDINGS.md.
+  float_keymaps = true,
+
   -- Directory names skipped (any depth) by `cwd`/`path` scope scans
   cwd_ignore = { ".git", "node_modules", ".venv", "venv", "__pycache__", "dist", "build", ".next", "target", ".tox" },
 
