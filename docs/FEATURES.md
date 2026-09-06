@@ -204,7 +204,7 @@ no global state outside the current buffer's ignore list. which-key (if
 installed) labels the `<leader>lr` group automatically; the individual keys
 are plain global mappings onto `:Recommender` with no `<Plug>` indirection.
 
-- **Module:** `bindings/keymaps.lua`, `bindings/which_key.lua`
+- **Module:** `bindings/keymaps.lua` (the which-key group label rides along in its keymap spec)
 - **Keymaps:** [global keymaps](BINDINGS.md#global-keymaps)
 - **Config:** `opts.keymaps` (default `true`)
 
