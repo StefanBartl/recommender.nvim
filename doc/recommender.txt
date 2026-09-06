@@ -585,15 +585,15 @@ indicator does), whether global keymaps are enabled, and whether a
       lib.lua                soft bridge to lib.nvim (notify/map), fallback
       progress.lua           soft bridge to lib.nvim.progress (async cwd/path scan)
     bindings/
-      init.lua               orchestrates usrcmds/keymaps/which_key/autocmds
+      init.lua               orchestrates usrcmds/keymaps/autocmds
       usrcmds.lua            :Recommender command + per-invocation state;
                              owns the cwd/path scan's cancel/supersede generation
-      keymaps.lua            global keymaps (config.keymaps ~= false)
-      which_key.lua          optional which-key group label
+      keymaps.lua            global keymaps (config.keymaps ~= false); also
+                             carries the which-key group label
       autocmds.lua           empty (structural symmetry only)
     float/
-      rendering.lua          float window: open / close / highlight; layout + stride
-      keymaps.lua            buffer-local keymaps for the float; navigates by stride
+      rendering.lua          builds lib.nvim.ui.kit.select items (layout: detailed/compact), opens the picker
+      keymaps.lua            <CR>-insert handler + extra float keymaps (y/A/<BS>/U/?) on top of kit.select's nav/close
       autocmds.lua           one-shot WinClosed hook (replace-mode)
     blacklist.lua            prefix matching + default list
     custom_aliases.lua       built-in chain → alias name map

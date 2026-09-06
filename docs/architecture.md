@@ -13,10 +13,9 @@ lua/recommender/
     lib.lua                soft bridge to lib.nvim (notify/map), with fallback
     progress.lua           soft bridge to lib.nvim.progress, for the async cwd/path scan
   bindings/
-    init.lua               orchestrates usrcmds/keymaps/which_key/autocmds
+    init.lua               orchestrates usrcmds/keymaps/autocmds
     usrcmds.lua             :Recommender command + per-invocation state
-    keymaps.lua             global keymaps (config.keymaps ~= false)
-    which_key.lua           optional which-key group label
+    keymaps.lua             global keymaps (config.keymaps ~= false); also carries the which-key group label
     autocmds.lua            empty (structural symmetry only)
   float/
     rendering.lua           builds lib.nvim.ui.kit.select rich items (layout: detailed/compact) + opens the picker
@@ -43,8 +42,10 @@ No open roadmap items — every previously tracked idea has shipped.
 
 ## Design principles
 
-- **No hard `lib.nvim` dependency** — `util/lib.lua` uses it when present
-  (notify/map), falls back to native Neovim APIs otherwise.
+- **`lib.nvim` required** — `:Recommender` is registered via
+  `lib.nvim.bindings.usercmd.composer` with no fallback (see
+  [installation.md](installation.md)). Only the `notify`/`map` helpers in
+  `util/lib.lua` still degrade to native Neovim APIs when absent.
 - **Lazy analyzer loading** — `treesitter.lua` is only required when first used.
 - **Per-buffer ignore state** — ignores are stored by bufnr, not globally.
 - **No deprecated API** — uses `vim.bo` / `vim.wo` throughout.
