@@ -1,5 +1,5 @@
 ---@module 'recommender.util.lib'
----@brief Soft, guarded bridge to the optional `lib.nvim` helper library.
+---@brief Soft, guarded bridge to `lib.nvim`'s `notify`/`keymap` helpers.
 ---@description
 --- recommender.nvim prefers `lib.nvim.notify` / `lib.nvim.bindings.keymap` when present,
 --- and every accessor here probes the corresponding module with `pcall` and

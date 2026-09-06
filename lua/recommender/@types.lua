@@ -39,6 +39,9 @@
 ---@field unignore?   string|string[]|false  default `U`
 ---@field help?       string|string[]|false  default `?`
 
+--- CDX: unused — every analyzer and the float modules spell this shape inline
+--- as `{chain:string, count:integer, alias:string}[]`. Wire this class into
+--- those signatures, or drop it.
 ---@class Recommender.Suggestion
 ---@field chain string   Dotted chain (e.g. "vim.api"), or a fixed pattern key for analyzer = "perf" (e.g. "table.insert(...)")
 ---@field count integer  Occurrence count in the scanned scope
