@@ -21,6 +21,11 @@ function M.register_replace_finish(target_win, buf_snapshot, alias_text)
       return
     end
 
+    --- CDX: hardcoded to `TelescopePrompt`, but replacer.nvim also ships an
+    --- fzf picker backend — with that backend `:Replace`'s prompt is not a
+    --- TelescopePrompt window, this never fires, and replace-mode insertion
+    --- silently does nothing. Detect the other backend, or document the
+    --- Telescope-only limitation.
     -- Only react to Telescope prompt windows closing
     if api.nvim_win_is_valid(winid) then
       local closed_buf = api.nvim_win_get_buf(winid)

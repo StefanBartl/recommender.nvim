@@ -88,6 +88,10 @@ function M.make_on_select(state)
       return
     end
 
+    --- CDX: `_pending_insert` is written here and cleared below but never read
+    --- anywhere in the repo — dead state left from an earlier insert path
+    --- (replace-mode insertion now goes through `float/autocmds.lua`'s
+    --- WinClosed hook). Drop it, or wire a reader.
     state._pending_insert = { win = target_win, text = item.alias }
 
     schedule(function()

@@ -32,14 +32,10 @@
 --- (used by `cwd`/`path` scope) share the same per-file `vim.fn.readfile()`
 --- call and the same "skip unreadable files" behavior — the async version
 --- just spreads that same work over batches scheduled on the event loop
---- instead of one tight `for` loop.
----
---- Together, `find_files_async` + `read_lines_async` are what make a
---- `cwd`/`path` scan across hundreds of files (each a real syscall, plus
---- whatever an AV/EDR hook adds per open/stat on Windows) never block Neovim
---- for the scan's full duration — only for one directory or one small batch
---- at a time, with a `lib.nvim.progress` indicator (`config.progress_style`)
---- tracking both phases.
+--- instead of one tight `for` loop, so a `cwd`/`path` scan across hundreds of
+--- files never blocks Neovim for the scan's full duration, only for one
+--- directory or batch at a time, with a `lib.nvim.progress` indicator
+--- (`config.progress_style`) over both phases.
 
 local M = {}
 
