@@ -13,30 +13,30 @@ jobs:
     name: stylua (format check)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: JohnnyMorganz/stylua-action@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          version: latest
+          version: v2.5.2
           args: --check lua TESTS
 
   luacheck:
     name: luacheck (lint)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: leafo/gh-actions-lua@v13
         with:
           luaVersion: "5.1"
       - uses: leafo/gh-actions-luarocks@v4
-      - run: luarocks install luacheck
+      - run: luarocks install luacheck 1.2.0
       - run: luacheck lua TESTS
 
   tests:
     name: tests (headless)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: recommender.nvim
 
@@ -44,7 +44,7 @@ jobs:
       # recommender.util.lib require it at module load -- so the suite cannot
       # run without it. Checked out as a sibling, which is the layout
       # TESTS/run.lua's own resolver looks for first after $LIB_NVIM_PATH.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           repository: StefanBartl/lib.nvim
           path: lib.nvim
