@@ -26,3 +26,9 @@ is the short version of all of it.
 | --- | --- |
 | [FEATURES.md](FEATURES.md) | Everything this plugin does, in one file: what it analyses in a buffer or a whole project, and what it suggests from that |
 | [architecture.md](architecture.md) | Which module does what |
+
+## Working on it
+
+| Page | Answers |
+| --- | --- |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Ground rules, project layout, and how to add an analyzer |
