@@ -7,7 +7,9 @@ is the short version of all of it.
 
 | Page | Answers |
 | --- | --- |
-| [installation.md](installation.md) | What has to be there first, and a spec per plugin manager |
+| [installation.md](installation.md) | Requirements, and a spec per plugin manager |
+| [quickstart.md](quickstart.md) | The first thing to run after installing |
+| [what-you-get.md](what-you-get.md) | The full argument surface at a glance |
 | [configuration.md](configuration.md) | Every option `setup()` takes |
 | [troubleshooting.md](troubleshooting.md) | What `:checkhealth` asks |
 
