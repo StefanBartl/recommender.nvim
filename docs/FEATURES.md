@@ -1,5 +1,23 @@
 # Features
 
+`vim.api` written forty times in a file is not a bug, and no linter will
+mention it. It is the kind of thing you notice once, decide to fix later, and
+never look at again. This plugin is the "later": it counts, it shows you the
+count, and it writes the alias for you.
+
+| Area | Does |
+| --- | --- |
+| **Chain analysis** | Counts repeated dotted chains — `vim.api`, `table.insert`, and the rest — and suggests an alias declaration for the ones over the threshold |
+| **Four languages** | Lua through a regex or a Tree-sitter backend, plus separate backends for JS/TS and Python |
+| **Scopes** | The current buffer by default, or `line`, `cfile`, `path` (this file's directory) or `cwd` (the whole tree). A wider scope surfaces chains that repeat across a project even when no single file crosses the threshold |
+| **The float** | An interactive window: accept, skip, or look at the occurrences, without leaving it |
+| **Replace mode** | With `-r`, accepting a suggestion rewrites every occurrence in the buffer as well as inserting the declaration |
+| **The perf analyzer** | A different check entirely — four benchmarked Lua anti-patterns rather than chain repetition. See [below](#perf-analyzer-analyzer--perf) |
+
+A `cwd` or `path` scan runs fully asynchronously: the editor never freezes,
+however large the tree, and an optional `progress_style` indicator shows where
+it is — a notification, the statusline, fidget, or a cancellable float.
+
 Analyzes a buffer (or a whole project) for either dotted chains repeated
 often enough to be worth aliasing, or (via `analyzer = "perf"`) Lua
 performance anti-patterns with a measured, benchmarked win — and lets you
