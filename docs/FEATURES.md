@@ -141,7 +141,7 @@ hit — pass an explicit threshold token to override.
 
 ### Why it's a picker, not a report
 
-The float is built on `lib.nvim.ui.kit.select`, so navigation (`j`/`k`/arrows),
+The float is built on `ui.kit.select`, so navigation (`j`/`k`/arrows),
 `<CR>`-submit, and `q`/`<Esc>`-close come for free from kit.select itself.
 `recommender.nvim` only supplies what's specific to this use case: `<CR>`'s
 actual insert behavior, plus extra buffer-local keymaps layered on top for
