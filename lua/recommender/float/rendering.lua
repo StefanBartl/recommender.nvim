@@ -2,11 +2,11 @@
 ---Float window: builds `kit.select` rich items from suggestions and opens/
 ---closes the picker. Navigation, the current-item highlight, multi-select,
 ---and the multi-line/per-column highlighting are all handled by
----lib.nvim.ui.kit's chooser now (see UI-KIT-CONCEPT.md §13b) -- this module
+---ui.kit's chooser now (see UI-KIT-CONCEPT.md §13b) -- this module
 ---only builds the item list and owns the bit of state other recommender
 ---modules still need (`source_win`, whether a picker is open).
 
-local kit = require("lib.nvim.ui.kit")
+local kit = require("ui.kit")
 
 local M = {}
 
@@ -70,7 +70,7 @@ end
 ---@param restore_index integer|nil  Restore cursor to this logical item index
 ---@param layout "detailed"|"compact"|nil  Defaults to "detailed"
 ---@param on_select fun(suggestion: table)  Fired on <CR> with the chosen suggestion
----@return Lib.UI.Kit.Surface|nil surf
+---@return Ui.Kit.Surface|nil surf
 function M.open(suggestions, title, restore_index, layout, on_select)
   M.source_win = vim.api.nvim_get_current_win()
   M.close()

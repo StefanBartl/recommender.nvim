@@ -269,7 +269,7 @@ asynchronous, so this is purely visual, never a blocking wait.
   `"float"`       Small floating window; focus it and press <Esc> to
                   cancel the scan.
   `"kit"`         Same interaction as `"float"`, themed via
-                  `lib.nvim.ui.kit`.
+                  `ui.kit`.
 
 Needs `lib.nvim.progress`; a no-op otherwise (the scan still runs, just
 without an indicator — see |recommender-health|). Cancelling (via the
@@ -592,7 +592,7 @@ indicator does), whether global keymaps are enabled, and whether a
                              carries the which-key group label
       autocmds.lua           empty (structural symmetry only)
     float/
-      rendering.lua          builds lib.nvim.ui.kit.select items (layout: detailed/compact), opens the picker
+      rendering.lua          builds ui.kit.select items (layout: detailed/compact), opens the picker
       keymaps.lua            <CR>-insert handler + extra float keymaps (y/A/<BS>/U/?) on top of kit.select's nav/close
       autocmds.lua           one-shot WinClosed hook (replace-mode)
     blacklist.lua            prefix matching + default list

@@ -27,6 +27,15 @@ function M.check()
     )
   end
 
+  if pcall(require, "ui.kit") then
+    vim.health.ok("ui.kit available (the suggestion float's picker)")
+  else
+    vim.health.error(
+      "ui.kit not found — require('recommender').setup() will fail to register :Recommender",
+      { "Install StefanBartl/ui.nvim" }
+    )
+  end
+
   local has_ts_lua = pcall(vim.treesitter.query.parse, "lua", "(field_expression) @field")
   if has_ts_lua then
     vim.health.ok('Lua Tree-sitter parser found (analyzer = "treesitter" available)')

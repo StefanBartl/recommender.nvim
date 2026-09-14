@@ -28,7 +28,7 @@ require("recommender").setup({
   keymaps = true,
 
   -- Extra keymaps inside the suggestion float (yank/apply/backspace/undo/help
-  -- — navigation and submit/close are lib.nvim.ui.kit's chooser itself, not
+  -- — navigation and submit/close are ui.kit's chooser itself, not
   -- listed here). true = defaults; false drops all five; a table remaps or
   -- drops individual ones, e.g. { yank = "Y" }. See BINDINGS.md.
   float_keymaps = true,

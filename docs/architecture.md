@@ -18,7 +18,7 @@ lua/recommender/
     keymaps.lua             global keymaps (config.keymaps ~= false); also carries the which-key group label
     autocmds.lua            empty (structural symmetry only)
   float/
-    rendering.lua           builds lib.nvim.ui.kit.select rich items (layout: detailed/compact) + opens the picker
+    rendering.lua           builds ui.kit.select rich items (layout: detailed/compact) + opens the picker
     keymaps.lua             <CR>-insert handler + extra buffer-local keymaps (y/A/<BS>/U/?) on top of kit.select's own nav/close
     autocmds.lua            one-shot WinClosed hook for replace-mode finish detection
   blacklist.lua             prefix matching + default blacklist

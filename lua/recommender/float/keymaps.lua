@@ -1,7 +1,7 @@
 ---@module 'recommender.float.keymaps'
 ---Buffer-local keymaps for the Recommender float window. Navigation
 ---(j/k/arrows/mouse), <CR>-submits, and q/<Esc>-closes are handled by
----lib.nvim.ui.kit's chooser itself now -- this
+---ui.kit's chooser itself now -- this
 ---module only builds the <CR> handler passed into `rendering.open()` and
 ---attaches the extra actions chooser doesn't know about (y/A/<BS>/U/?),
 ---which read the highlighted suggestion via `kit.chooser.current_item()`
@@ -16,7 +16,7 @@
 
 local notify = require("recommender.util.notify").create("[recommender]")
 local rendering = require("recommender.float.rendering")
-local kit = require("lib.nvim.ui.kit")
+local kit = require("ui.kit")
 
 local M = {}
 
