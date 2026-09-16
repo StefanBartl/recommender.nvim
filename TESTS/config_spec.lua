@@ -9,6 +9,7 @@ return function(H)
   local fresh = config.get()
   H.eq(fresh.threshold, DEFAULTS.threshold, "get() before setup() returns the defaults")
   H.ok(fresh ~= DEFAULTS, "and returns a copy, not the DEFAULTS table itself")
+  H.ok(config.get() == fresh, "a second get() before any setup() reuses the same snapshot instead of re-copying")
 
   -- Merge ---------------------------------------------------------------------
   local merged = config.setup({ threshold = 5 })
