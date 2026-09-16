@@ -31,7 +31,7 @@ misleading failures.
 | `regex_analyzer_spec.lua` | which chains the default analyzer finds, how it counts them, the derived and custom alias forms |
 | `javascript_analyzer_spec.lua` | the JS/TS analyzer: `$`-permissive identifiers, the `const %s = %s;` alias form |
 | `python_analyzer_spec.lua` | the Python analyzer: the plain `%s = %s` alias form (no `local`/`const`) |
-| `treesitter_analyzer_spec.lua` | the pure "counts → ranked, aliased suggestions" half (`_internal.build_suggestions`, `_internal.common_prefix`), and a pinned regression for the grammar-mismatch bug below |
+| `treesitter_analyzer_spec.lua` | the pure "counts → ranked, aliased suggestions" half (`_internal.build_suggestions`, `_internal.common_prefix`), and `M.analyze()` end-to-end against a real Tree-sitter-parsed buffer |
 | `perf_analyzer_spec.lua` | the block tracker: the same call is a finding inside a loop and noise outside one |
 | `config_spec.lua` | the merge, that `DEFAULTS` survives it unmutated, and the cached no-`setup()` snapshot |
 | `project_spec.lua` | file collection for the non-buffer scopes, the ignore list, the cap |
@@ -49,33 +49,11 @@ with lines, made current).
 
 Every `lua/recommender/**/*.lua` file with real logic or branching that can be
 required without `ui.kit` (see "Deliberately left untested" below) now has a
-dedicated real-assertion spec: the regex/javascript/python analyzers, the
-tree-sitter analyzer's pure suggestion-building half, the blacklist, the
-config merge, project-wide file/line collection (sync and async), the
-replace-mode `WinClosed` detector, the global-keymap override resolution, and
-the `lib.nvim`-soft-dependency fallbacks in `util/lib.lua` and
-`util/progress.lua`.
-
-One real bug surfaced while writing this pass, pinned as a regression
-assertion rather than fixed (fixing it is a source change, not a test one, and
-belongs in its own commit):
-
-- **`analyzers/treesitter.lua`'s Tree-sitter query never matches on current
-  Neovim.** `collect_chains` queries for `(field_expression)` and
-  `(call_expression function: (field_expression) @call)`, but the
-  tree-sitter-lua grammar actually bundled with Neovim (checked against
-  0.12.2) names those nodes `dot_index_expression` and `function_call` —
-  `field_expression`/`call_expression` do not exist in that grammar at all.
-  `vim.treesitter.query.parse` therefore fails outright, the failure is
-  swallowed by `collect_chains`'s own `pcall` guard (by design — an
-  absent/mismatched parser is meant to degrade to "no findings", not error),
-  and `M.analyze()` silently returns no suggestions no matter what the buffer
-  contains. `analyzer = "treesitter"` is effectively inert on any Neovim this
-  was checked against. `treesitter_analyzer_spec.lua` pins this exact
-  (broken) `M.analyze()` behavior with a `BUG:`-prefixed assertion, and tests
-  the alias/prefix logic that the query *should* be feeding, directly, via
-  `M._internal.build_suggestions`/`common_prefix` — pure functions with no
-  Tree-sitter dependency of their own.
+dedicated real-assertion spec: the regex/javascript/python/tree-sitter
+analyzers, the blacklist, the config merge, project-wide file/line collection
+(sync and async), the replace-mode `WinClosed` detector, the global-keymap
+override resolution, and the `lib.nvim`-soft-dependency fallbacks in
+`util/lib.lua` and `util/progress.lua`.
 
 ### Deliberately left untested
 

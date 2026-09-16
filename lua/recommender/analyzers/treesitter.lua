@@ -40,8 +40,8 @@ local function collect_chains(bufnr, bl)
     ts.query.parse,
     "lua",
     [[
-    (field_expression) @field
-    (call_expression function: (field_expression) @call)
+    (dot_index_expression) @field
+    (function_call name: (dot_index_expression) @call)
   ]]
   )
   if not ok_q then
@@ -50,12 +50,21 @@ local function collect_chains(bufnr, bl)
 
   local chains = {}
   for _, match in query:iter_matches(root, bufnr) do
-    for _, node in pairs(match) do
-      ---@cast node TSNode
-      local val = node_text(node, src)
-      if val and val:match("^[%w_]+%.[%w_]+") then
-        if not blacklist.is_blacklisted(val, bl) then
-          chains[#chains + 1] = val
+    for _, capture in pairs(match) do
+      -- `match:captures()` (what `iter_matches` yields per capture id) returns
+      -- a list of nodes, not a single node -- normalize both shapes so this
+      -- keeps working regardless of which one a given Neovim returns.
+      local nodes = capture
+      if capture.type ~= nil then
+        nodes = { capture }
+      end
+      ---@cast nodes TSNode[]
+      for _, node in ipairs(nodes) do
+        local val = node_text(node, src)
+        if val and val:match("^[%w_]+%.[%w_]+") then
+          if not blacklist.is_blacklisted(val, bl) then
+            chains[#chains + 1] = val
+          end
         end
       end
     end

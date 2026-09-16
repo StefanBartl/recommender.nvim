@@ -1,11 +1,11 @@
 -- TESTS/treesitter_analyzer_spec.lua — the Tree-sitter analyzer.
 --
--- `M.analyze()` itself depends on a working Lua Tree-sitter grammar being
--- installed, which this suite cannot assume (see the BUG note below), so most
--- of what is actually testable here is `M._internal`: the pure "counts in,
--- ranked+aliased suggestions out" half (`build_suggestions`) and the
--- longest-common-prefix helper it leans on (`common_prefix`). Both are
--- exercised directly, with plain counts tables, independent of Tree-sitter.
+-- `M._internal`'s pure "counts in, ranked+aliased suggestions out" half
+-- (`build_suggestions`) and the longest-common-prefix helper it leans on
+-- (`common_prefix`) are exercised directly, with plain counts tables,
+-- independent of Tree-sitter. `M.analyze()` itself is then exercised
+-- end-to-end against a real Lua buffer, relying on the Lua Tree-sitter parser
+-- bundled with Neovim.
 
 return function(H)
   local ts_analyzer = require("recommender.analyzers.treesitter")
@@ -76,22 +76,31 @@ return function(H)
   H.eq(ranked[1].count, 5, "highest count first")
   H.eq(ranked[#ranked].count, 1, "lowest count last")
 
-  -- BUG: M.analyze() -----------------------------------------------------
-  -- The query in `collect_chains` above asks for `(field_expression)` and
-  -- `(call_expression function: (field_expression) @call)`, but the
-  -- tree-sitter-lua grammar actually shipped with Neovim (checked against
-  -- 0.12) names those nodes `dot_index_expression` and `function_call`.
-  -- `ts.query.parse` therefore fails outright ("Invalid node type
-  -- field_expression"), `collect_chains` always returns {} via its own
-  -- pcall guard, and `M.analyze()` reports no suggestions no matter what the
-  -- buffer contains — silently, since the failure is swallowed by design
-  -- (an absent/mismatched parser is meant to degrade to "no findings", not
-  -- error). This pins the CURRENT (broken) behavior as a regression test
-  -- rather than fixing it here; see the final report for a follow-up.
+  -- M.analyze() end-to-end ------------------------------------------------
+  -- `collect_chains`'s query matches on `dot_index_expression` (a plain
+  -- dotted access, e.g. `vim.api`) and `function_call` (a call, capturing
+  -- its `name:` field when that's itself a dotted access, e.g.
+  -- `vim.api.nvim_buf_get_lines(...)`). Both patterns can match the very
+  -- same node -- a called chain like `vim.api.nvim_buf_get_lines` is a
+  -- `dot_index_expression` in its own right, so it is picked up once as a
+  -- plain field access and once as a call target, hence count 2 below (not
+  -- 1) for each fully-qualified call. `vim.api` is also a
+  -- `dot_index_expression` in its own right (nested inside each outer
+  -- chain), so it is picked up too, once per statement.
   H.scratch({
     "local a = vim.api.nvim_buf_get_lines(0, 0, -1, false)",
     "local b = vim.api.nvim_buf_set_lines(0, 0, -1, false, {})",
     "local c = vim.api.nvim_win_get_buf(0)",
   })
-  H.eq(#ts_analyzer.analyze(1, {}, {}), 0, "BUG: analyze() finds nothing on the current grammar -- see comment above")
+  local found = ts_analyzer.analyze(1, {}, {})
+  H.eq(#found, 4, "the three full call chains plus the vim.api prefix they share")
+  H.eq(H.find(found, "vim.api.nvim_buf_get_lines").count, 2, "matched as both a field access and a call target")
+  H.eq(H.find(found, "vim.api.nvim_buf_set_lines").count, 2, "same double-match for the second call")
+  H.eq(H.find(found, "vim.api.nvim_win_get_buf").count, 2, "same double-match for the third call")
+  H.eq(H.find(found, "vim.api").count, 3, "the shared prefix, matched once per statement as a nested field access")
+  H.eq(
+    H.find(found, "vim.api.nvim_buf_get_lines").alias,
+    "local api = vim.api",
+    "all four chains share the vim.api prefix, so all alias to it"
+  )
 end
