@@ -93,19 +93,17 @@ local function common_prefix(chains)
   return table.concat(parts, ".", 1, depth)
 end
 
----Analyze the current buffer and return alias suggestions.
+---@internal
+---Build sorted alias suggestions from already-counted chains. Split out of
+---`M.analyze` so this half — filtering by threshold, deriving the shared-
+---prefix alias, sorting — is exercised directly by tests regardless of
+---whether a working Tree-sitter Lua grammar is actually installed (see
+---`M._internal` below).
+---@param counts table<string, integer>
 ---@param threshold integer
 ---@param custom_aliases table<string,string>
----@param bl string[]
 ---@return {chain:string, count:integer, alias:string}[]
-function M.analyze(threshold, custom_aliases, bl)
-  local bufnr = vim.api.nvim_get_current_buf()
-  local counts = {}
-
-  for _, chain in ipairs(collect_chains(bufnr, bl)) do
-    counts[chain] = (counts[chain] or 0) + 1
-  end
-
+local function build_suggestions(counts, threshold, custom_aliases)
   local filtered = {}
   for chain, count in pairs(counts) do
     if count >= threshold then
@@ -143,5 +141,30 @@ function M.analyze(threshold, custom_aliases, bl)
   end)
   return out
 end
+
+---Analyze the current buffer and return alias suggestions.
+---@param threshold integer
+---@param custom_aliases table<string,string>
+---@param bl string[]
+---@return {chain:string, count:integer, alias:string}[]
+function M.analyze(threshold, custom_aliases, bl)
+  local bufnr = vim.api.nvim_get_current_buf()
+  local counts = {}
+
+  for _, chain in ipairs(collect_chains(bufnr, bl)) do
+    counts[chain] = (counts[chain] or 0) + 1
+  end
+
+  return build_suggestions(counts, threshold, custom_aliases)
+end
+
+--- The pure parts behind `M.analyze()`, exposed for `TESTS/treesitter_analyzer_spec.lua`.
+--- Not part of the public API — they stay local to this module for callers and
+--- may change shape without notice.
+M._internal = {
+  common_prefix = common_prefix,
+  build_suggestions = build_suggestions,
+  collect_chains = collect_chains,
+}
 
 return M

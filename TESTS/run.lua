@@ -48,9 +48,15 @@ local H = dofile(dir .. "harness.lua")
 local specs = {
   "blacklist_spec.lua",
   "regex_analyzer_spec.lua",
+  "javascript_analyzer_spec.lua",
+  "python_analyzer_spec.lua",
+  "treesitter_analyzer_spec.lua",
   "perf_analyzer_spec.lua",
   "config_spec.lua",
   "project_spec.lua",
+  "float_autocmds_spec.lua",
+  "keymaps_spec.lua",
+  "util_lib_spec.lua",
 }
 
 local failed = 0
