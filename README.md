@@ -39,6 +39,10 @@ leaving it. Pure Neovim, no external tooling.
 > where a claim about performance gets measured rather than assumed. The perf
 > analyzer exists because that question was asked of this plugin's own premise.
 >
+> **[ui.nvim](https://github.com/StefanBartl/ui.nvim)** — shows how many
+> alias suggestions are open for the current buffer as a statusline
+> badge, so you notice them without running the analyzer by hand.
+>
 > All of the above are soft: without them everything else works unchanged.
 > [lib.nvim](https://github.com/StefanBartl/lib.nvim) is the one real
 > dependency — see [Requirements](docs/installation.md#requirements).
