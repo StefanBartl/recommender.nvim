@@ -65,6 +65,7 @@ question each page answers.
 - [What you get with the defaults](docs/what-you-get.md) — the full argument surface at a glance.
 - [All options](docs/configuration.md) — every `setup()` option, its default, and the default keymaps.
 - [Command reference](docs/commands.md) — `:Recommender`, the scopes, the float's keys, and replace mode.
+- [Statusline](docs/statusline.md) — the open-suggestion count as a component, for lualine, heirline, the native statusline or ui.nvim.
 
 **The Rest**
 
