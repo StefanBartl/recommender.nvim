@@ -57,6 +57,7 @@ local specs = {
   "float_autocmds_spec.lua",
   "keymaps_spec.lua",
   "util_lib_spec.lua",
+  "statusline_spec.lua",
 }
 
 local failed = 0
