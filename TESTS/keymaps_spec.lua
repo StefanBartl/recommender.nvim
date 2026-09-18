@@ -6,7 +6,10 @@
 -- recommender.float.rendering/keymaps, which require "ui.kit" (ui.nvim) at
 -- module load -- unavailable in this repo's own CI (only lib.nvim is a
 -- sibling there). bindings/keymaps.lua itself only needs lib.nvim, so it is
--- safe to require directly.
+-- safe to require directly. (usrcmds.lua's own pure logic -- the part that
+-- does not need a real `execute()` dispatch through rendering/keymaps -- is
+-- covered separately in TESTS/usrcmds_spec.lua, which unlocks the require by
+-- stubbing "ui.kit" in package.loaded first; see that file's header.)
 
 return function(H)
   local keymaps = require("recommender.bindings.keymaps")

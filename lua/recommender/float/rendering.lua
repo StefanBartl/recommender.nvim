@@ -99,4 +99,12 @@ function M.open(suggestions, title, restore_index, layout, on_select)
   })
 end
 
+--- The pure item-building half behind `M.open()` -- turning one suggestion
+--- into lines + highlights, no `kit.select` call involved -- exposed for
+--- `TESTS/rendering_spec.lua`. Not part of the public API -- stays local to
+--- this module for callers and may change shape without notice.
+M._internal = {
+  build_item = build_item,
+}
+
 return M

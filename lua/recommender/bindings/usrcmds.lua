@@ -475,4 +475,13 @@ function M.setup(cfg)
   })
 end
 
+--- The pure parts behind `execute()`'s dispatch -- token classification and
+--- `<cfile>` resolution, neither of which touches `ui.kit` -- exposed for
+--- `TESTS/usrcmds_spec.lua`. Not part of the public API -- they stay local to
+--- this module for callers and may change shape without notice.
+M._internal = {
+  classify_pos_args = classify_pos_args,
+  resolve_cfile = resolve_cfile,
+}
+
 return M
