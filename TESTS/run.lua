@@ -58,6 +58,9 @@ local specs = {
   "keymaps_spec.lua",
   "util_lib_spec.lua",
   "statusline_spec.lua",
+  "usrcmds_spec.lua",
+  "rendering_spec.lua",
+  "float_keymaps_spec.lua",
 }
 
 local failed = 0

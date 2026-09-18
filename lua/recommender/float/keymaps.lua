@@ -269,4 +269,13 @@ function M.attach_extra(bufnr, state, user)
   return bound
 end
 
+--- The pure window-selection helpers behind `make_on_select()`/
+--- `attach_extra()`'s insert-target logic -- neither touches `kit` -- exposed
+--- for `TESTS/float_keymaps_spec.lua`. Not part of the public API -- stay
+--- local to this module for callers and may change shape without notice.
+M._internal = {
+  is_normal_window = is_normal_window,
+  find_target_window = find_target_window,
+}
+
 return M

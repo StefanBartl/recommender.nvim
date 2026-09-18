@@ -3,11 +3,17 @@
 -- (Telescope) prompt window closes.
 --
 -- Deliberately excludes recommender.float.rendering/keymaps and
--- recommender.bindings.usrcmds: all three require "ui.kit" (ui.nvim) at
+-- recommender.bindings.usrcmds here: all three require "ui.kit" (ui.nvim) at
 -- module load, which this repo's own CI does not check out (only lib.nvim is
 -- a sibling there) -- requiring them here would pass locally and fail in CI.
 -- float/autocmds.lua has no such dependency, only lib.nvim.bindings.autocmd,
 -- so it is safe to exercise directly.
+--
+-- The three ui.kit-adjacent modules' pure logic (no rendering, no picker) is
+-- covered separately in TESTS/usrcmds_spec.lua, TESTS/rendering_spec.lua, and
+-- TESTS/float_keymaps_spec.lua, which unlock the require by dropping a
+-- minimal stub into `package.loaded["ui.kit"]` before it happens -- CI still
+-- never needs a real ui.nvim checkout.
 
 return function(H)
   local fa = require("recommender.float.autocmds")
