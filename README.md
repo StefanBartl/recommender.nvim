@@ -39,13 +39,14 @@ leaving it. Pure Neovim, no external tooling.
 > where a claim about performance gets measured rather than assumed. The perf
 > analyzer exists because that question was asked of this plugin's own premise.
 >
-> **[ui.nvim](https://github.com/StefanBartl/ui.nvim)** — shows how many
-> alias suggestions are open for the current buffer as a statusline
-> badge, so you notice them without running the analyzer by hand.
+> **[ui.nvim](https://github.com/StefanBartl/ui.nvim)** — required: its
+> `ui.kit` module renders the suggestion float itself, and also shows how
+> many suggestions are open for the current buffer as a statusline badge.
 >
-> All of the above are soft: without them everything else works unchanged.
-> [lib.nvim](https://github.com/StefanBartl/lib.nvim) is the one real
-> dependency — see [Requirements](docs/installation.md#requirements).
+> Of the above, only replacer.nvim is soft — without it a suggestion still
+> inserts its declaration, it just doesn't rewrite the occurrences.
+> [lib.nvim](https://github.com/StefanBartl/lib.nvim) and ui.nvim are both
+> required — see [Requirements](docs/installation.md#requirements).
 
 ---
 
