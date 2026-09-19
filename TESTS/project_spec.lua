@@ -140,14 +140,19 @@ return function(H)
   end
 
   -- Reading -------------------------------------------------------------------
-  local lines = project.read_lines({ root .. "/a.lua", root .. "/src/b.lua" })
+  local lines, skipped = project.read_lines({ root .. "/a.lua", root .. "/src/b.lua" })
   H.eq(#lines, 2, "one entry per line across all files")
   H.ok(vim.tbl_contains(lines, "local x = vim.fn.getcwd()"), "the file contents come through unchanged")
+  H.eq(skipped, 0, "nothing was skipped in a clean read")
 
   -- A path that does not exist is skipped rather than raising: a project scan
   -- races against the filesystem, and one deleted file must not lose the run.
-  local partial = project.read_lines({ root .. "/a.lua", root .. "/gone.lua" })
+  -- The skipped count (ERR-11) is what lets a caller tell "nothing to
+  -- report" apart from "couldn't read some of it" -- both would otherwise
+  -- come back as the same flat `lines` array.
+  local partial, partial_skipped = project.read_lines({ root .. "/a.lua", root .. "/gone.lua" })
   H.eq(#partial, 1, "a missing file is skipped, not fatal")
+  H.eq(partial_skipped, 1, "...and counted, rather than only silently dropped")
 
   -- Async reading -------------------------------------------------------------
   -- Same content as the sync `read_lines` above, but delivered through
@@ -157,14 +162,14 @@ return function(H)
   -- fixture files, so the test exercises the "yield between batches" path,
   -- not just the "everything fits in one batch" shortcut.
   do
-    local async_lines, progress_calls = nil, {}
+    local async_lines, async_skipped, progress_calls = nil, nil, {}
     project.read_lines_async({ root .. "/a.lua", root .. "/src/b.lua" }, {
       batch_size = 1,
       on_progress = function(done, total)
         progress_calls[#progress_calls + 1] = { done = done, total = total }
       end,
-      on_done = function(result)
-        async_lines = result
+      on_done = function(result, n_skipped)
+        async_lines, async_skipped = result, n_skipped
       end,
     })
     H.falsy(async_lines, "on_done has not run yet -- read_lines_async must not block the caller")
@@ -176,9 +181,29 @@ return function(H)
 
     H.eq(#async_lines, 2, "same result as the sync read_lines, over two batches")
     H.ok(vim.tbl_contains(async_lines, "local x = vim.fn.getcwd()"), "file contents come through unchanged")
+    H.eq(async_skipped, 0, "nothing was skipped in a clean read")
     H.eq(#progress_calls, 2, "one on_progress call per batch (batch_size=1, two files)")
     H.eq(progress_calls[2].done, 2, "the final progress call reports every file done")
     H.eq(progress_calls[2].total, 2, "...against the correct total")
+  end
+
+  -- Same skipped-count contract as the sync read above, over a batch that
+  -- mixes a readable and an unreadable path (ERR-11).
+  do
+    local async_lines, async_skipped = nil, nil
+    project.read_lines_async({ root .. "/a.lua", root .. "/gone.lua" }, {
+      batch_size = 1,
+      on_done = function(result, n_skipped)
+        async_lines, async_skipped = result, n_skipped
+      end,
+    })
+    H.wait_until(function()
+      return async_lines ~= nil
+    end, "read_lines_async never called on_done")
+    ---@cast async_lines -nil
+
+    H.eq(#async_lines, 1, "the readable file's line still comes through")
+    H.eq(async_skipped, 1, "the missing file is counted as skipped, not silently absorbed")
   end
 
   -- is_cancelled, checked before every batch, stops the scan silently: no

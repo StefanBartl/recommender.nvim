@@ -35,7 +35,11 @@
 --- instead of one tight `for` loop, so a `cwd`/`path` scan across hundreds of
 --- files never blocks Neovim for the scan's full duration, only for one
 --- directory or batch at a time, with a `lib.nvim.progress` indicator
---- (`config.progress_style`) over both phases.
+--- (`config.progress_style`) over both phases. Both also return/report how
+--- many files were skipped, alongside the lines -- "nothing to report" and
+--- "couldn't read the scan" must stay distinguishable (`bindings/usrcmds.lua`
+--- folds it into the empty-result message and the progress indicator's
+--- closing text).
 
 local M = {}
 
@@ -269,20 +273,27 @@ end
 
 ---Read every file's lines and concatenate them into one combined line list.
 ---Unreadable files (permission errors, race-deleted files, …) are skipped
----rather than aborting the whole scan.
+---rather than aborting the whole scan -- `skipped` is how a caller tells
+---"nothing to report" from "couldn't read some of it" (ERR-11); an empty
+---`paths` and an all-unreadable `paths` would otherwise both come back as
+---the same empty `lines` with no way to distinguish them.
 ---@param paths string[]
----@return string[]
+---@return string[] lines
+---@return integer skipped
 function M.read_lines(paths)
   local lines = {}
+  local skipped = 0
   for _, p in ipairs(paths) do
     local ok, file_lines = pcall(vim.fn.readfile, p)
     if ok and type(file_lines) == "table" then
       for _, l in ipairs(file_lines) do
         lines[#lines + 1] = l
       end
+    else
+      skipped = skipped + 1
     end
   end
-  return lines
+  return lines, skipped
 end
 
 ---Default number of files read per batch before yielding back to the event
@@ -309,13 +320,14 @@ function M.read_lines_async(paths, opts)
   local batch_size = (opts.batch_size and opts.batch_size > 0) and opts.batch_size or DEFAULT_BATCH_SIZE
   local total = #paths
   local lines = {}
+  local skipped = 0
   local done_count = 0
 
   if total == 0 then
     if opts.on_progress then
       opts.on_progress(0, 0)
     end
-    opts.on_done(lines)
+    opts.on_done(lines, skipped)
     return
   end
 
@@ -331,6 +343,8 @@ function M.read_lines_async(paths, opts)
         for _, l in ipairs(file_lines) do
           lines[#lines + 1] = l
         end
+      else
+        skipped = skipped + 1
       end
     end
     done_count = batch_end
@@ -342,7 +356,7 @@ function M.read_lines_async(paths, opts)
     if done_count < total then
       vim.schedule(step)
     else
-      opts.on_done(lines)
+      opts.on_done(lines, skipped)
     end
   end
 

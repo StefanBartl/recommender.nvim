@@ -75,6 +75,33 @@ return function(H)
     H.falsy(scope, "a second number is not a scope")
   end
 
+  -- A token matching none of the three is reported, not dropped (ERR-10):
+  -- "no argument" and "a garbage argument" must not look identical.
+  do
+    local analyzer, threshold, scope, unrecognized = classify_pos_args({ "javascrpt" })
+    H.falsy(analyzer, "a near-miss token is not treated as the analyzer")
+    H.falsy(threshold, "...nor coerced into a threshold")
+    H.falsy(scope, "...nor a scope")
+    H.eq(#unrecognized, 1, "the unrecognized token is reported")
+    H.eq(unrecognized[1], "javascrpt", "...by its own text")
+  end
+
+  -- A second candidate for an already-filled category is unrecognized too,
+  -- not silently absorbed -- {"cwd", "path"} used to leave "path" with no
+  -- trace at all once "cwd" had already claimed the scope slot.
+  do
+    local _, _, scope, unrecognized = classify_pos_args({ "cwd", "path" })
+    H.eq(scope, "cwd", "the first scope name still wins the slot")
+    H.eq(#unrecognized, 1, "the second scope-shaped token is reported")
+    H.eq(unrecognized[1], "path", "...by its own text")
+  end
+
+  -- Every token classifies cleanly -> nothing unrecognized.
+  do
+    local _, _, _, unrecognized = classify_pos_args({ "cwd", "javascript", "5" })
+    H.eq(#unrecognized, 0, "a fully valid token set reports nothing unrecognized")
+  end
+
   -- resolve_cfile ---------------------------------------------------------------
   do
     local root = vim.fs.normalize(vim.fn.getcwd()) .. "/TESTS/.fixture_usrcmds"

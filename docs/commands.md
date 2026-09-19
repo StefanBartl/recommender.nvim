@@ -39,7 +39,10 @@ may hold an analyzer name, a scope name, or a threshold number, in any
 order — `:Recommender cwd javascript 5` and `:Recommender 5 javascript cwd`
 resolve identically, since positional tokens are classified by content, not
 by slot. An undeclared `--flag` is a hard error (an undeclared `-x` still
-stays a lenient positional, same as before).
+stays a lenient positional, same as before). A positional token that is
+none of the three — not a known analyzer or scope name, not a number — is
+also a hard error naming the offending token, rather than being silently
+dropped as if nothing had been typed.
 
 ## Scopes
 

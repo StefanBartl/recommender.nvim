@@ -57,7 +57,7 @@
 ---@class Recommender.ReadLinesAsyncOpts
 ---@field batch_size?   integer
 ---@field on_progress?  fun(done:integer, total:integer)
----@field on_done       fun(lines:string[])
+---@field on_done       fun(lines:string[], skipped:integer)
 ---@field is_cancelled? fun():boolean
 
 return {}
