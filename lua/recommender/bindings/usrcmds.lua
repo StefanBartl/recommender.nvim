@@ -125,23 +125,30 @@ end
 ---each token is checked against the scope names, then the analyzer names,
 ---then `tonumber`. The first match for each category wins, so token order
 ---never matters: `cwd javascript 5`, `javascript cwd 5`, and `5 javascript
----cwd` all classify identically.
+---cwd` all classify identically. A token matching none of the three (a typo,
+---or a second candidate for an already-filled category) is collected rather
+---than dropped — "no argument" and "an unrecognized argument" must not
+---collapse onto the same silent nil (ERR-10).
 ---@param pos_args string[]
 ---@return string|nil analyzer_name
 ---@return integer|nil threshold
 ---@return string|nil scope
+---@return string[] unrecognized
 local function classify_pos_args(pos_args)
   local analyzer_name, threshold, scope
+  local unrecognized = {}
   for _, tok in ipairs(pos_args) do
     if not scope and _is_scope_name[tok] then
       scope = tok
     elseif not analyzer_name and _is_analyzer_name[tok] then
       analyzer_name = tok
-    elseif not threshold then
+    elseif not threshold and tonumber(tok) then
       threshold = tonumber(tok)
+    else
+      unrecognized[#unrecognized + 1] = tok
     end
   end
-  return analyzer_name, threshold, scope
+  return analyzer_name, threshold, scope, unrecognized
 end
 
 ---@internal
@@ -193,7 +200,21 @@ local ignore_by_buf = {}
 ---@param flag_threshold integer|nil  `--threshold=N`; wins over a positional number.
 ---@return nil
 local function execute(cfg, replace_mode, pos_args, cwd_flag, flag_threshold)
-  local pos_analyzer, pos_threshold, pos_scope = classify_pos_args(pos_args)
+  local pos_analyzer, pos_threshold, pos_scope, pos_unrecognized = classify_pos_args(pos_args)
+  if #pos_unrecognized > 0 then
+    -- A typo here must not behave like "no argument" (ERR-10): silently
+    -- falling through to the default analyzer/scope would run a plausible
+    -- but wrong scan with nothing pointing at the mistake.
+    notify.error(
+      ("unrecognized argument%s: %s — expected an analyzer (%s), a scope (%s), or a threshold number"):format(
+        #pos_unrecognized == 1 and "" or "s",
+        table.concat(pos_unrecognized, ", "),
+        table.concat(ANALYZER_NAMES, ", "),
+        table.concat(SCOPE_NAMES, ", ")
+      )
+    )
+    return
+  end
   -- `or "regex"` mirrors config/DEFAULTS.lua: the merge always fills
   -- `analyzer`, but the option type no longer promises it now that a
   -- partial `setup({})` is legal.
@@ -237,14 +258,20 @@ local function execute(cfg, replace_mode, pos_args, cwd_flag, flag_threshold)
   }
 
   function state.refresh()
-    local analyzer = get_analyzer(analyzer_name)
+    -- Resolved inside `guarded()` below, not here: `get_analyzer` raises for
+    -- an unknown name, and that must be reported the same friendly way as
+    -- every other failure in this function (ERR-22), not escape
+    -- `vim.schedule` as a raw, unhandled error.
+    ---@type table
+    local analyzer
 
     ---@internal
     ---Shared tail once `all` is known: filter ignored entries, then open (or
     ---report empty). Called synchronously for buffer/cfile/line scope, and
     ---from `project.read_lines_async`'s `on_done` for cwd/path.
     ---@param all {chain:string, count:integer, alias:string}[]
-    local function finish(all)
+    ---@param skipped integer|nil  files that could not be read (cwd/path/cfile scope only)
+    local function finish(all, skipped)
       state.visible = {}
       for _, s in ipairs(all) do
         if not state.ignored[s.chain] then
@@ -253,7 +280,14 @@ local function execute(cfg, replace_mode, pos_args, cwd_flag, flag_threshold)
       end
 
       if #state.visible == 0 then
-        notify.info(("No suggestions (threshold: %d)"):format(threshold))
+        local msg = ("No suggestions (threshold: %d)"):format(threshold)
+        if skipped and skipped > 0 then
+          -- "no suggestions" and "couldn't read the scan" must not look
+          -- identical (ERR-11) -- a clean scan and a permission-restricted
+          -- one otherwise both end in this exact same sentence.
+          msg = msg .. (" — %d file%s could not be read"):format(skipped, skipped == 1 and "" or "s")
+        end
+        notify.info(msg)
         rendering.close()
         return
       end
@@ -288,6 +322,8 @@ local function execute(cfg, replace_mode, pos_args, cwd_flag, flag_threshold)
     end
 
     guarded(function()
+      analyzer = get_analyzer(analyzer_name)
+
       if not (state.source_bufnr and api.nvim_buf_is_valid(state.source_bufnr)) then
         notify.warn("Source buffer is no longer valid")
         rendering.close()
@@ -378,12 +414,16 @@ local function execute(cfg, replace_mode, pos_args, cwd_flag, flag_threshold)
                 })
               end
             end,
-            on_done = function(lines)
+            on_done = function(lines, skipped)
               if _active_progress_handle == handle then
                 _active_progress_handle = nil
               end
               if handle then
-                handle:finish(("scanned %d files"):format(#paths))
+                local finish_text = ("scanned %d files"):format(#paths)
+                if skipped and skipped > 0 then
+                  finish_text = finish_text .. (" (%d unreadable)"):format(skipped)
+                end
+                handle:finish(finish_text)
               end
               -- Belt-and-braces: read_lines_async already stops calling
               -- batches (and never calls on_done at all) once is_cancelled()
@@ -393,7 +433,7 @@ local function execute(cfg, replace_mode, pos_args, cwd_flag, flag_threshold)
                 return
               end
               guarded(function()
-                finish(analyzer.analyze(threshold, state.custom_aliases, state.blacklist, lines))
+                finish(analyzer.analyze(threshold, state.custom_aliases, state.blacklist, lines), skipped)
               end)
             end,
           })
@@ -427,7 +467,7 @@ local function execute(cfg, replace_mode, pos_args, cwd_flag, flag_threshold)
         return
       end
 
-      local lines
+      local lines, skipped
       if scope == "cfile" then
         local path, path_err = resolve_cfile(state.cfile_raw, state.source_bufnr)
         if not path then
@@ -437,12 +477,12 @@ local function execute(cfg, replace_mode, pos_args, cwd_flag, flag_threshold)
           rendering.close()
           return
         end
-        lines = project.read_lines({ path })
+        lines, skipped = project.read_lines({ path })
       else -- "line"
         lines = { state.cursor_line_text or "" }
       end
 
-      finish(analyzer.analyze(threshold, state.custom_aliases, state.blacklist, lines))
+      finish(analyzer.analyze(threshold, state.custom_aliases, state.blacklist, lines), skipped)
     end)
   end
 
