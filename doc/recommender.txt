@@ -93,15 +93,28 @@ Call `setup()` once: >
     -- see |recommender-config|
   })
 <
-`setup()` is idempotent — calling it twice has no effect. It registers:
+`setup()` registers, once:
 
   * The `:Recommender` user command (see |:Recommender|).
   * Global keymaps when `keymaps = true` (the default).
+
+Calling it again does not re-register either of those (an explicit repeat
+call is reported as such rather than silently doing nothing), but it does
+re-merge `opts` into the active config, which takes effect immediately —
+every subsequent `:Recommender` invocation reads analyzer/threshold/
+blacklist/float_keymaps/etc. fresh from the same config table. Only the
+global keymaps' actual key bindings stay as first configured.
 
 ==============================================================================
 5. CONFIGURATION                                  *recommender-config*
 
 All keys are optional. Unset keys use the defaults shown below.
+
+An unknown key or an invalid `analyzer`/`progress_style`/`float_layout`
+value is dropped before the merge rather than silently kept: `setup()`
+still succeeds, the default is used for whatever was rejected, and
+`:checkhealth recommender` (see |recommender-health|) reports exactly what
+was dropped and why (with a "did you mean" hint for a near-miss key name).
 
 ------------------------------------------------------------------------------
 5.1 analyzer                           *recommender-config-analyzer*
@@ -343,7 +356,9 @@ counter (|recommender-architecture|).
   `:Recommender cwd javascript 5` and `:Recommender 5 javascript cwd`
   dispatch identically. An undeclared `--flag` (unlike an undeclared `-x`,
   which stays a lenient positional) is a hard error instead of being
-  silently treated as a no-op positional value.
+  silently treated as a no-op positional value -- and so is a positional
+  token matching none of the three (not a known analyzer/scope name, not a
+  number): it is named in an error rather than silently dropped.
 
 ==============================================================================
 7. FLOAT KEYMAPS                               *recommender-float-keymaps*
@@ -539,8 +554,10 @@ After `setup()`, only one public function is exposed:
                                               *recommender.setup()*
 `require("recommender").setup([opts])`
 
-  Initialize the plugin. Idempotent — safe to call multiple times (only
-  the first call takes effect).
+  Initialize the plugin. Safe to call multiple times: the `:Recommender`
+  command and global keymaps register only on the first call, but `opts` is
+  re-merged into the active config every time and takes effect right away
+  (see |recommender-setup|).
 
 Internal modules can be imported directly if needed: >
 
@@ -563,9 +580,11 @@ Reports Neovim version, lib.nvim.bindings.usercmd.composer availability (require
 see |recommender-requirements|), Tree-sitter Lua parser availability,
 javascript/python/perf analyzer availability, the active `cwd_ignore`/
 `cwd_max_files` settings shared by the `cwd`/`path` scopes, the active
-`float_layout`, plugin-loaded state, lib.nvim.notify/which-key detection
-and lib.nvim.progress availability (soft, cosmetic only — the async
-`cwd`/`path` scan itself never depends on it, only `progress_style`'s
+`float_layout`, whether `setup()` has actually run (`:Recommender`
+registered — not just the plugin file having been sourced), any unknown or
+invalid option from the last `setup()` call, lib.nvim.notify/which-key
+detection and lib.nvim.progress availability (soft, cosmetic only — the
+async `cwd`/`path` scan itself never depends on it, only `progress_style`'s
 indicator does), whether global keymaps are enabled, and whether a
 `:Replace` command is available for replace mode.
 
