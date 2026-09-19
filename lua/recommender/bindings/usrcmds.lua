@@ -331,10 +331,20 @@ local function execute(cfg, replace_mode, pos_args, cwd_flag, flag_threshold)
       end
 
       if scope == "buffer" then
-        local all
+        local all, analyzer_ok
         api.nvim_buf_call(state.source_bufnr, function()
-          all = analyzer.analyze(threshold, state.custom_aliases, state.blacklist)
+          all, analyzer_ok = analyzer.analyze(threshold, state.custom_aliases, state.blacklist)
         end)
+        if analyzer_ok == false then
+          -- Only the treesitter analyzer ever reports this (the regex-based
+          -- ones have no failure mode to report). "no suggestions" and "the
+          -- analyzer couldn't run at all" (no Lua parser installed, a parse
+          -- failure, ...) must not look identical (ERR-11) -- both would
+          -- otherwise reach `finish()` as the same empty `all`.
+          notify.warn(("%s analyzer could not analyze this buffer — see :checkhealth recommender"):format(analyzer_name))
+          rendering.close()
+          return
+        end
         finish(all)
         return
       end

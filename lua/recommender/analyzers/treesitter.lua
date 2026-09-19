@@ -19,18 +19,26 @@ end
 
 ---@internal
 ---Collect all dotted chains from the buffer via Tree-sitter.
+---A second `false` return means the analysis itself could not run (no Lua
+---parser installed, a parse failure, or a broken query) -- distinct from a
+---buffer that genuinely has no chains, which returns `{}, true`. Without
+---this, "no parser installed" and "buffer has nothing to suggest" both come
+---back as the same empty list, and a caller (`bindings/usrcmds.lua`) would
+---report "No suggestions" either way -- exactly the shape ERR-11 forbids,
+---since only one of those two causes is something the user can act on.
 ---@param bufnr integer
 ---@param bl string[]
----@return string[]
+---@return string[] chains
+---@return boolean ok
 local function collect_chains(bufnr, bl)
   local ok_parser, parser = pcall(ts.get_parser, bufnr, "lua")
   if not ok_parser or not parser then
-    return {}
+    return {}, false
   end
 
   local ok_parse, trees = pcall(parser.parse, parser)
   if not ok_parse or not trees or #trees == 0 then
-    return {}
+    return {}, false
   end
 
   local root = trees[1]:root()
@@ -45,7 +53,7 @@ local function collect_chains(bufnr, bl)
   ]]
   )
   if not ok_q then
-    return {}
+    return {}, false
   end
 
   local chains = {}
@@ -70,7 +78,7 @@ local function collect_chains(bufnr, bl)
     end
   end
 
-  return chains
+  return chains, true
 end
 
 ---@internal
@@ -152,19 +160,24 @@ local function build_suggestions(counts, threshold, custom_aliases)
 end
 
 ---Analyze the current buffer and return alias suggestions.
+---A second `false` return means Tree-sitter itself could not analyze the
+---buffer (see `collect_chains`) -- the empty/near-empty result that follows
+---must not be read as "nothing to suggest" (ERR-11).
 ---@param threshold integer
 ---@param custom_aliases table<string,string>
 ---@param bl string[]
 ---@return {chain:string, count:integer, alias:string}[]
+---@return boolean ok
 function M.analyze(threshold, custom_aliases, bl)
   local bufnr = vim.api.nvim_get_current_buf()
   local counts = {}
 
-  for _, chain in ipairs(collect_chains(bufnr, bl)) do
+  local chains, ok = collect_chains(bufnr, bl)
+  for _, chain in ipairs(chains) do
     counts[chain] = (counts[chain] or 0) + 1
   end
 
-  return build_suggestions(counts, threshold, custom_aliases)
+  return build_suggestions(counts, threshold, custom_aliases), ok
 end
 
 --- The pure parts behind `M.analyze()`, exposed for `TESTS/treesitter_analyzer_spec.lua`.

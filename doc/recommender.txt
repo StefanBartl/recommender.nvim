@@ -490,6 +490,11 @@ Uses `vim.treesitter.query.parse` to find `field_expression` and
 chains. Ignores string contents and comments automatically. Requires the Lua
 parser (`TSInstall lua`).
 
+If the Lua parser is missing (or the buffer otherwise cannot be parsed),
+`:Recommender treesitter` warns explicitly rather than reporting
+"No suggestions" — the two are different causes and are not shown the same
+way. Run `:checkhealth recommender` to check parser availability.
+
 Treesitter also applies a "common prefix" heuristic: if multiple chains share
 a common prefix of depth >= 2 (e.g., `vim.api.nvim_buf_*` chains all share
 `vim.api`), the alias targets the prefix rather than the full chain.
