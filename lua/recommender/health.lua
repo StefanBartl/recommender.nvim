@@ -54,10 +54,25 @@ function M.check()
 
   vim.health.ok(("float_layout = %q"):format(cfg.float_layout or "detailed"))
 
-  if vim.g.loaded_recommender then
-    vim.health.ok("plugin loaded (vim.g.loaded_recommender = " .. tostring(vim.g.loaded_recommender) .. ")")
+  -- `plugin/recommender.lua` sets `vim.g.loaded_recommender = true` the
+  -- moment Neovim sources the plugin directory, independently of whether
+  -- `setup()` ever ran -- so that flag alone cannot tell "installed" from
+  -- "configured". `:Recommender` existing is what `setup()` actually does.
+  if vim.fn.exists(":Recommender") == 2 then
+    vim.health.ok("plugin set up (:Recommender is registered)")
   else
-    vim.health.info("plugin guard not set (call require('recommender').setup())")
+    vim.health.info("setup() not called yet — call require('recommender').setup() to register :Recommender and its keymaps")
+  end
+
+  -- Config validation from the last setup() call (unknown keys, rejected
+  -- values) -- see `recommender.config.setup`.
+  local cfg_issues = require("recommender.config").issues()
+  if #cfg_issues == 0 then
+    vim.health.ok("config: no unknown/invalid options from the last setup() call")
+  else
+    for _, issue in ipairs(cfg_issues) do
+      vim.health.warn("config: " .. issue)
+    end
   end
 
   if require("recommender.util.lib").available() then
