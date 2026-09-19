@@ -66,6 +66,48 @@ return function(H)
     H.ok(issues[1]:find("no%-such%-analyzer", 1, false) ~= nil, "...naming the rejected value")
   end
 
+  -- Invalid threshold degrades to the default (ERR-22) -------------------------
+  -- `threshold` flows straight into `analyzers/*.lua`'s `count >= threshold`
+  -- with no other guard, so a non-integer, non-positive, or wrong-type value
+  -- must degrade before the merge rather than reach that comparison and crash.
+  do
+    for _, bad in ipairs({ "not-a-number", 0, -3, 2.5, {}, true }) do
+      local out = config.setup({ threshold = bad })
+      H.eq(out.threshold, DEFAULTS.threshold, ("threshold %s degrades to the default"):format(vim.inspect(bad)))
+      H.eq(#config.issues(), 1, ("...and is reported (%s)"):format(vim.inspect(bad)))
+    end
+  end
+
+  -- Invalid cwd_max_files degrades to the default (ERR-22) ----------------------
+  -- Feeds `project.lua`'s `max_files > 0` the same way; 0 itself is valid
+  -- (means unbounded), so only values below that, non-integers, and wrong
+  -- types should be rejected.
+  do
+    for _, bad in ipairs({ "many", -5, 2.5, {}, true }) do
+      local out = config.setup({ cwd_max_files = bad })
+      H.eq(out.cwd_max_files, DEFAULTS.cwd_max_files, ("cwd_max_files %s degrades to the default"):format(vim.inspect(bad)))
+      H.eq(#config.issues(), 1, ("...and is reported (%s)"):format(vim.inspect(bad)))
+    end
+    local out = config.setup({ cwd_max_files = 0 })
+    H.eq(out.cwd_max_files, 0, "cwd_max_files = 0 (unbounded) is accepted, not degraded")
+    H.eq(#config.issues(), 0, "...and reports no issues")
+  end
+
+  -- Invalid blacklist/custom_aliases/cwd_ignore degrade to the default (ERR-22) --
+  -- All three are read straight into `ipairs`/index operations downstream
+  -- (`blacklist.is_blacklisted`, `analyzers/*.lua`, `project.lua`) with no
+  -- other guard, so a scalar (e.g. a forgotten `{}`) must degrade before the
+  -- merge rather than reach those operations and crash.
+  do
+    for _, field in ipairs({ "blacklist", "custom_aliases", "cwd_ignore" }) do
+      for _, bad in ipairs({ "not-a-table", 5, true }) do
+        local out = config.setup({ [field] = bad })
+        H.ok(vim.deep_equal(out[field], DEFAULTS[field]), ("%s = %s degrades to the default"):format(field, vim.inspect(bad)))
+        H.eq(#config.issues(), 1, ("...and is reported (%s = %s)"):format(field, vim.inspect(bad)))
+      end
+    end
+  end
+
   -- A clean setup() reports no issues -------------------------------------------
   do
     config.setup({ threshold = 4 })
