@@ -103,15 +103,26 @@ function M.make_on_select(state)
       vim.cmd("redraw")
 
       if state.replace_mode then
-        local buf = api.nvim_win_get_buf(target_win)
-        local snapshot = api.nvim_buf_get_lines(buf, 0, -1, false)
-
-        require("recommender.float.autocmds").register_replace_finish(target_win, snapshot, item.alias)
-
         local var_name = item.alias:match("^%s*local%s+([%w_]+)") or item.alias:match("^%s*([%w_]+)%s*=")
 
         if var_name and vim.fn.exists(":Replace") == 2 then
-          vim.cmd(("Replace %s %s %%"):format(item.chain, var_name))
+          -- The one-shot WinClosed watcher is armed only here, on the branch
+          -- that actually dispatches :Replace (ERR-30) -- arming it
+          -- unconditionally left it staged against a snapshot the fallback
+          -- branch below had already invalidated by inserting the alias
+          -- itself, so an unrelated Telescope picker closing later would
+          -- have reinserted that same alias a second time.
+          local buf = api.nvim_win_get_buf(target_win)
+          local snapshot = api.nvim_buf_get_lines(buf, 0, -1, false)
+          require("recommender.float.autocmds").register_replace_finish(target_win, snapshot, item.alias)
+
+          -- List form, not a formatted string (SEC-35): `item.chain` is raw
+          -- buffer text -- the treesitter analyzer can hand back a chain
+          -- spanning multiple lines -- and a `vim.cmd(string)` splits an
+          -- embedded newline into separate Ex commands, each parsed and run
+          -- on its own. `args` reaches :Replace as already-split values
+          -- instead, with no command-line parsing involved.
+          vim.cmd({ cmd = "Replace", args = { item.chain, var_name, "%" } })
         else
           api.nvim_put({ item.alias }, "l", false, true)
           state._pending_insert = nil
