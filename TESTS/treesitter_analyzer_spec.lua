@@ -92,8 +92,9 @@ return function(H)
     "local b = vim.api.nvim_buf_set_lines(0, 0, -1, false, {})",
     "local c = vim.api.nvim_win_get_buf(0)",
   })
-  local found = ts_analyzer.analyze(1, {}, {})
+  local found, found_ok = ts_analyzer.analyze(1, {}, {})
   H.eq(#found, 4, "the three full call chains plus the vim.api prefix they share")
+  H.eq(found_ok, true, "a working Tree-sitter parse reports ok = true, even with results")
   H.eq(H.find(found, "vim.api.nvim_buf_get_lines").count, 2, "matched as both a field access and a call target")
   H.eq(H.find(found, "vim.api.nvim_buf_set_lines").count, 2, "same double-match for the second call")
   H.eq(H.find(found, "vim.api.nvim_win_get_buf").count, 2, "same double-match for the third call")
@@ -103,4 +104,26 @@ return function(H)
     "local api = vim.api",
     "all four chains share the vim.api prefix, so all alias to it"
   )
+
+  -- A buffer with genuinely nothing to suggest still reports ok = true --
+  -- "empty" here means the parse succeeded and found no repeated chains.
+  H.scratch({ "local x = 1" })
+  local empty, empty_ok = ts_analyzer.analyze(1, {}, {})
+  H.eq(#empty, 0, "no chains in this buffer at all")
+  H.eq(empty_ok, true, "a successful parse with nothing to report is still ok = true")
+
+  -- ERR-11: when Tree-sitter itself cannot analyze the buffer (no Lua parser
+  -- installed, here simulated by making get_parser raise, same as it does
+  -- for a genuinely missing parser), that must come back as ok = false --
+  -- not the same empty, ok-looking result as a buffer with nothing to
+  -- suggest, which callers (bindings/usrcmds.lua) would otherwise report as
+  -- an identical "No suggestions".
+  local real_get_parser = vim.treesitter.get_parser
+  vim.treesitter.get_parser = function()
+    error("simulated: no Lua Tree-sitter parser installed")
+  end
+  local broken, broken_ok = ts_analyzer.analyze(1, {}, {})
+  vim.treesitter.get_parser = real_get_parser
+  H.eq(#broken, 0, "no chains can be collected without a parser")
+  H.eq(broken_ok, false, "a failed analysis reports ok = false, distinguishable from a genuinely empty one")
 end
