@@ -50,6 +50,18 @@ require("recommender").setup({
 })
 ```
 
+An unknown key (a typo like `threshhold`) or an invalid `analyzer`/
+`progress_style`/`float_layout` value is dropped before the merge rather
+than silently kept — the rest of `setup()` still succeeds, using the
+default for whatever was rejected, and `:checkhealth recommender` reports
+exactly what was dropped and why (with a "did you mean" hint for a
+near-miss key name).
+
+Calling `setup()` again re-merges `opts` into the active config and takes
+effect immediately for every subsequent `:Recommender` invocation — it does
+not re-register the command or the global keymaps, which stay bound as
+first configured.
+
 ## Async `cwd`/`path` scanning
 
 A `cwd`/`path` scope scan (directory walk + file reads) runs asynchronously
