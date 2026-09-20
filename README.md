@@ -55,20 +55,20 @@ leaving it. Pure Neovim, no external tooling.
 Start at [docs/README.md](docs/README.md), which says what is where and which
 question each page answers.
 
-**The Basics**
+### The Basics
 
 - [Requirements](docs/installation.md#requirements) — Neovim version, required plugins, no external tools.
 - [Installation](docs/installation.md) — a spec per plugin manager.
 - [Quickstart](docs/quickstart.md) — the first thing to run after installing.
 
-**Configuration**
+### Configuration
 
 - [What you get with the defaults](docs/what-you-get.md) — the full argument surface at a glance.
 - [All options](docs/configuration.md) — every `setup()` option, its default, and the default keymaps.
 - [Command reference](docs/commands.md) — `:Recommender`, the scopes, the float's keys, and replace mode.
 - [Statusline](docs/statusline.md) — the open-suggestion count as a component, for lualine, heirline, the native statusline or ui.nvim.
 
-**The Rest**
+### The Rest
 
 - [Features](docs/FEATURES.md) — everything this plugin does, in one file: what it analyses, what it suggests from that, and the [perf analyzer](docs/FEATURES.md#perf-analyzer-analyzer--perf)'s own benchmark.
 - [Examples](docs/examples.md) — a worked before/after of the suggestion float.
