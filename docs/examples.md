@@ -2,7 +2,7 @@
 
 ## Suggesting aliases
 
-**Buffer before:**
+### Buffer before
 
 ```lua
 vim.api.nvim_create_user_command("Foo", function()
@@ -14,7 +14,7 @@ vim.api.nvim_create_user_command("Foo", function()
 end, {})
 ```
 
-**Float shows:**
+### Float shows
 
 ```
 ╭─ Recommender: 2 suggestions ──────────╮
