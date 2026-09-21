@@ -1,9 +1,9 @@
 -- TESTS/run.lua — headless test runner for recommender.nvim.
 --
 -- Run from the repo root:
---   nvim --headless -u NONE -c "set rtp+=." -c "luafile TESTS/run.lua" -c "qa!"
+--   nvim -n -i NONE --headless -u NONE -c "set rtp+=." -c "luafile TESTS/run.lua" -c "qa!"
 -- or:
---   nvim --headless -u NONE -c "set rtp+=." -l TESTS/run.lua
+--   nvim -n -i NONE --headless -u NONE -c "set rtp+=." -l TESTS/run.lua
 --
 -- lib.nvim has to be reachable: recommender.blacklist and recommender.util.lib
 -- require it at module load. The runner puts a sibling checkout on the
