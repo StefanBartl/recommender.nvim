@@ -17,6 +17,9 @@
 [![Lua](https://img.shields.io/badge/Lua-5.1%2FLuaJIT-2C2D72?logo=lua&logoColor=white)](https://www.lua.org)
 ![Status](https://img.shields.io/badge/status-beta-orange)
 [![CI](https://github.com/StefanBartl/recommender.nvim/actions/workflows/ci.yml/badge.svg)](https://github.com/StefanBartl/recommender.nvim/actions/workflows/ci.yml)
+[![wkd](https://img.shields.io/badge/wkd-family-c6ff3d)](https://stefanbartl.github.io/wkd/p/recommender/)
+
+> Part of the [wkd](https://stefanbartl.github.io/wkd/) family — see this plugin's [page](https://stefanbartl.github.io/wkd/p/recommender/) on the site.
 
 Finds the repetition in your code and offers to do something about it. It
 reads a buffer — or a wider scope — for dotted chains repeated often enough to
