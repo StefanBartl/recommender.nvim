@@ -4,20 +4,26 @@ Headless spec suite. No plugin manager, no tree, no picker — every spec drives
 a module directly and asserts on what it returns.
 
 ```
-nvim --headless -u NONE -c "set rtp+=." -l TESTS/run.lua
+bash scripts/test.sh                # all specs
+bash scripts/test.sh --file config   # only spec files whose name contains "config"
 ```
 
-Exit 0 is a pass; the runner prints one line per spec and exits non-zero on the
-first failure. CI runs exactly this command.
+The runner is [testing.nvim](https://github.com/StefanBartl/testing.nvim),
+configured by `.testing.lua` (dialect `h`: the specs run on `TESTS/harness.lua`).
+It prints one line per spec and exits non-zero on a failure (or when a
+dependency is missing). CI runs exactly this script.
 
-## lib.nvim
+## Dependencies
 
 `recommender.blacklist` and `recommender.util.lib` require lib.nvim at module
-load, so the suite cannot run without it. `run.lua` resolves it in this order:
+load, so the suite cannot run without it; testing.nvim and ui.nvim are found
+the same way. `scripts/test.sh` (and `TESTS/minimal_init.lua`) resolve each
+`<name>` in this order and fail loudly, naming all four places, if none hits:
 
-1. `$LIB_NVIM_PATH`
-2. a sibling checkout, `../lib.nvim`
-3. the lazy.nvim-managed copy under `stdpath("data")/lazy/lib.nvim`
+1. `$<NAME>_DIR` (e.g. `$LIB_NVIM_DIR`)
+2. `.deps/<name>`
+3. a sibling checkout, `../<name>`
+4. the lazy.nvim-managed copy under `stdpath("data")/lazy/<name>`
 
 A sibling wins over the plugin-manager copy on purpose: that one is often older
 than the working checkout, and testing against a stale lib.nvim gives
@@ -44,7 +50,7 @@ misleading failures.
 | `float_keymaps_spec.lua` | `float/keymaps.lua`'s pure window-selection helpers (`_internal.is_normal_window`, `_internal.find_target_window`): the source_win → alternate window → first-normal-window-in-the-list fallback chain |
 
 Adding one: write `TESTS/<name>_spec.lua` returning
-`function(H) ... end`, then list it in `run.lua`. `H` is the harness —
+`function(H) ... end`; testing.nvim discovers it by the `_spec.lua` suffix. `H` is the harness —
 `eq`, `ok`, `falsy`, `find` (look a suggestion up by chain, so a spec never
 depends on result order it is not asserting), `scratch` (a buffer filled
 with lines, made current), and `wait_until` (poll a predicate via `vim.wait`
@@ -69,10 +75,10 @@ override resolution, the `lib.nvim`-soft-dependency fallbacks in
 `bindings/usrcmds.lua`, `float/rendering.lua`, and `float/keymaps.lua` all
 `require("ui.kit")` (ui.nvim) at module load (`usrcmds.lua` transitively, via
 `float/rendering.lua` and `float/keymaps.lua`). This repo's own CI
-(`.github/workflows/ci.yml`) checks out only `lib.nvim` as a sibling, not
-`ui.nvim` — so a spec that plainly `require`s any of these three modules would
-pass locally (a `ui.nvim` checkout happens to sit next to this repo on the
-maintainer's machine) and fail in CI.
+(`.github/workflows/ci.yml`) now checks out `ui.nvim` too (it is a declared
+dependency of the runner), but the specs never relied on it: a spec that
+plainly `require`s any of these three modules would otherwise pass locally
+and could fail wherever no `ui.nvim` is around.
 
 None of the three functions actually tested here — `classify_pos_args`,
 `resolve_cfile`, `build_item`, `is_normal_window`, `find_target_window` — ever
