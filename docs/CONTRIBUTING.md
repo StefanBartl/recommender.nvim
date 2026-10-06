@@ -90,10 +90,13 @@ the documentation with it. See the ground rules.
 project walk.
 
 ```
-nvim --headless -u NONE -c "set rtp+=." -l TESTS/run.lua
+bash scripts/test.sh
 ```
 
-Exit 0 is a pass. [GitHub Actions](../.github/workflows/ci.yml) runs it plus
+This runs [testing.nvim](https://github.com/StefanBartl/testing.nvim); it and
+the dependencies (lib.nvim, ui.nvim) are found via `$<NAME>_DIR`, `.deps/<name>`,
+a sibling checkout or the plugin manager's copy, and a missing one is a loud
+error. Exit 0 is a pass. [GitHub Actions](../.github/workflows/ci.yml) runs it plus
 stylua and luacheck on every push and pull request to `main`.
 
 ## Workflow
