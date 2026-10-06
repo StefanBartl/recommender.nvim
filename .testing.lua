@@ -14,4 +14,25 @@ return {
   -- "none" = all specs in one nvim, "file" = one nvim per spec file
   -- (nothing leaks from one file into the next).
   isolated = "none",
+  -- Guards (docs/GUARDS.md of testing.nvim): every guard errors except the state guard.
+  guards = {
+    fs = "error",
+    scheduled_error = "error",
+    prompt = "error",
+    deprecation = "error",
+    process_net = "error",
+    -- warn: the specs leave scratch buffers plus the setup() keymaps and autocmds behind.
+    -- isolated = "file" would clean that up but exposes a real bug of the specs: float_keymaps_spec.lua:111
+    -- ("falls through to the one normal window left") expects window 1008 but gets 1000 in a fresh
+    -- editor; it only holds when an earlier spec file left window 1000 holding a special buffer.
+    state = "warn",
+  },
+  guard_allow = {
+    fs = {
+      -- project_spec.lua creates and deletes this fixture tree inside the repository.
+      "TESTS/.fixture",
+      -- usrcmds_spec.lua creates and deletes this fixture tree inside the repository.
+      "TESTS/.fixture_usrcmds",
+    },
+  },
 }
