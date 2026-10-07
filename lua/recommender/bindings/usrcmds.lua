@@ -513,9 +513,24 @@ function M.setup(cfg)
           { name = "a3", type = "STRING", values = COMPLETION_VALUES, optional = true },
         },
         flags = {
-          { name = "replace", short = "r", bool = true },
-          { name = "cwd", short = "c", bool = true },
-          { name = "threshold", short = "t", type = "INT" },
+          {
+            name = "replace",
+            short = "r",
+            bool = true,
+            desc = "After picking, replace every occurrence of the chain via :Replace",
+          },
+          {
+            name = "cwd",
+            short = "c",
+            bool = true,
+            desc = "Scan every file under the cwd, same as the cwd scope",
+          },
+          {
+            name = "threshold",
+            short = "t",
+            type = "INT",
+            desc = "Fewest repeats that make a chain a suggestion; beats a bare number",
+          },
         },
         run = function(ctx)
           execute(cfg, ctx.flags.replace or false, ctx.pos, ctx.flags.cwd or false, ctx.flags.threshold)
