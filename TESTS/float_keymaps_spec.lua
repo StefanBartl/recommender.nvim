@@ -44,6 +44,16 @@ return function(H)
     return win
   end
 
+  ---@internal
+  ---Close a window opened by `open_window` and wipe its buffer, so the spec
+  ---leaves no stray `[No Name]` buffers behind.
+  ---@param win integer
+  local function close_window(win)
+    local buf = api.nvim_win_get_buf(win)
+    api.nvim_win_close(win, true)
+    pcall(api.nvim_buf_delete, buf, { force = true })
+  end
+
   -- is_normal_window ------------------------------------------------------------
   do
     local ordinary = open_window("", true)
@@ -55,9 +65,9 @@ return function(H)
     local locked = open_window("", false)
     H.falsy(is_normal_window(locked), "a non-modifiable window is not normal, even with buftype=''")
 
-    api.nvim_win_close(ordinary, true)
-    api.nvim_win_close(special, true)
-    api.nvim_win_close(locked, true)
+    close_window(ordinary)
+    close_window(special)
+    close_window(locked)
     H.falsy(is_normal_window(ordinary), "a closed window id is never normal")
     H.falsy(is_normal_window(999999), "a window id that never existed is never normal")
   end
@@ -73,8 +83,8 @@ return function(H)
     H.eq(find_target_window(), source, "a valid, normal rendering.source_win is used regardless of the current window")
 
     rendering.source_win = saved_source_win
-    api.nvim_win_close(source, true)
-    api.nvim_win_close(other, true)
+    close_window(source)
+    close_window(other)
   end
 
   -- find_target_window: falls back to the alternate window ----------------------
@@ -89,8 +99,8 @@ return function(H)
     H.eq(find_target_window(), a, "with no usable source_win, falls back to the alternate window")
 
     rendering.source_win = saved_source_win
-    api.nvim_win_close(a, true)
-    api.nvim_win_close(b, true)
+    close_window(a)
+    close_window(b)
   end
 
   -- find_target_window: falls back to the first normal window in the list ------
@@ -100,6 +110,17 @@ return function(H)
   -- forcing the third-tier fallback (a scan of every window) to be what
   -- actually finds `normal_elsewhere`.
   do
+    -- A fresh editor starts with one ordinary window (the first in the list);
+    -- an earlier spec file may or may not have turned it into a special one.
+    -- Make every pre-existing window special here so the spec does not depend
+    -- on that, and restore afterwards.
+    local preexisting = {}
+    for _, win in ipairs(api.nvim_list_wins()) do
+      local buf = api.nvim_win_get_buf(win)
+      preexisting[#preexisting + 1] = { buf = buf, buftype = vim.bo[buf].buftype }
+      vim.bo[buf].buftype = "nofile"
+    end
+
     local normal_elsewhere = open_window("", true)
     local special_1 = open_window("nofile", true)
     local special_2 = open_window("nofile", true)
@@ -111,9 +132,14 @@ return function(H)
     H.eq(find_target_window(), normal_elsewhere, "falls through to the one normal window left in the list")
 
     rendering.source_win = saved_source_win
-    api.nvim_win_close(special_1, true)
-    api.nvim_win_close(special_2, true)
-    api.nvim_win_close(normal_elsewhere, true)
+    close_window(special_1)
+    close_window(special_2)
+    close_window(normal_elsewhere)
+    for _, saved in ipairs(preexisting) do
+      if api.nvim_buf_is_valid(saved.buf) then
+        vim.bo[saved.buf].buftype = saved.buftype
+      end
+    end
   end
 
   -- find_target_window: no normal window anywhere -> nil -----------------------
