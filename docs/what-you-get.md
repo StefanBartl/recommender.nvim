@@ -9,7 +9,7 @@
 | `treesitter` | The Lua backend with a parser, loaded only when chosen |
 | `javascript` · `python` | The JS/TS and Python backends |
 | `perf` | The four benchmarked Lua anti-patterns — see [FEATURES.md](FEATURES.md#perf-analyzer-analyzer--perf) |
-| `-r` / `--replace` | Accepting a suggestion rewrites every occurrence, via replacer.nvim |
+| `-r` / `--replace` | Accepting a suggestion rewrites every occurrence in the current buffer, via replacer.nvim (not for `javascript` and `perf`, which only insert) |
 
 Inside the float, the keys accept, skip and inspect a suggestion — they are in
 [commands.md](commands.md) together with the full argument list, and
