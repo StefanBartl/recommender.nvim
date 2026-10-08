@@ -60,6 +60,18 @@ return function(H)
     end
   end
   H.ok(texts >= 33, "the texts of a1..a3 and their ten values were found")
+
+  -- The flags follow the same style; `--replace` in particular promises a `:Replace` that only some
+  -- analyzers' suggestions get (see float_on_select_spec.lua), which its text has to say.
+  local flag_texts = 0
+  for _, flag in ipairs(composer.registry().Recommender:spec().routes[1].flags) do
+    flag_texts = flag_texts + 1
+    local text = flag.desc or ""
+    if text == "" or text:find("\n", 1, true) or text:sub(-1) == "." or #text > 80 then
+      malformed[#malformed + 1] = flag.name .. ": " .. text
+    end
+  end
+  H.eq(flag_texts, 3, "the flags -r, -c and -t were found")
   H.eq(#malformed, 0, "malformed texts: " .. table.concat(malformed, " | "))
   H.eq(#bare, 0, "completion values without a text: " .. table.concat(bare, ", "))
 end

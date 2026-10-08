@@ -79,10 +79,11 @@ That runs `:Replace vim.api.nvim_buf_set_lines api.nvim_buf_set_lines %`
 (via whatever plugin provides `:Replace` — [replacer.nvim](https://github.com/StefanBartl/replacer.nvim)
 is the one this plugin is built to pair with) and only *after* that
 replace's prompt window closes does it insert the `local api = vim.api`
-declaration. **This means `-r` is useless without a `:Replace` command
-registered** — if none exists, `Enter` in replace mode has nothing to drive,
-and the alias never gets inserted at all, since insertion is chained behind
-the replace finishing, not run unconditionally.
+declaration. **This means `-r` adds nothing without a `:Replace` command
+registered** — if none exists, `Enter` in replace mode falls back to a plain
+insert of the declaration, as without `-r`. The same plain insert happens for
+the `javascript` and `perf` analyzers, whose suggestions are not a
+`local x = chain` / `x = chain` assignment `:Replace` could be driven with.
 
 Note the detection mechanism is specifically a `WinClosed` autocmd watching
 for a `TelescopePrompt` window — a `:Replace` implementation that doesn't

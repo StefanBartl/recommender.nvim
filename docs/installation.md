@@ -8,7 +8,7 @@
 | [lib.nvim](https://github.com/StefanBartl/lib.nvim) | **required** | `:Recommender` is registered via `lib.nvim.bindings.usercmd.composer`, no fallback (`notify`/`map` specifically still degrade to a native fallback if somehow absent at that call site, but the command layer itself does not) |
 | [ui.nvim](https://github.com/StefanBartl/ui.nvim) | **required** | `bindings/usrcmds.lua` requires `ui.kit` at module load (the suggestion float's `ui.kit.select` picker) — `require("recommender").setup()` fails without it, no fallback |
 | Lua Tree-sitter parser | optional | needed for `analyzer = "treesitter"`, and only in the buffer scope; the module is required the first time that analyzer is actually selected, so the others never pay for it |
-| [replacer.nvim](https://github.com/StefanBartl/replacer.nvim) | optional | replace mode (`-r`), which rewrites every occurrence rather than only inserting the alias |
+| [replacer.nvim](https://github.com/StefanBartl/replacer.nvim) | optional | replace mode (`-r`), which rewrites every occurrence in the current buffer rather than only inserting the alias (Lua and Python suggestions) |
 | fidget.nvim | optional | one of the `progress_style` back ends for a long scan |
 
 No external tools at all — everything above is a Neovim plugin.

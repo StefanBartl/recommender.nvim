@@ -11,7 +11,7 @@ count, and it writes the alias for you.
 | **Four languages** | Lua through a regex or a Tree-sitter backend, plus separate backends for JS/TS and Python |
 | **Scopes** | The current buffer by default, or `line`, `cfile`, `path` (this file's directory) or `cwd` (the whole tree). A wider scope surfaces chains that repeat across a project even when no single file crosses the threshold |
 | **The float** | An interactive window: accept, skip, or look at the occurrences, without leaving it |
-| **Replace mode** | With `-r`, accepting a suggestion rewrites every occurrence in the buffer as well as inserting the declaration |
+| **Replace mode** | With `-r`, accepting a suggestion rewrites every occurrence in the current buffer as well as inserting the declaration (Lua and Python suggestions; JS/TS and perf only insert) |
 | **The perf analyzer** | A different check entirely — four benchmarked Lua anti-patterns rather than chain repetition. See [below](#perf-analyzer-analyzer--perf) |
 
 A `cwd` or `path` scan runs fully asynchronously: the editor never freezes,
@@ -166,8 +166,10 @@ count are each highlighted distinctly in the float.
 ## Replace mode
 
 After inserting an alias, automatically replaces every occurrence of the
-original chain in the buffer via a `:Replace` call, then inserts the
-`local alias = chain` declaration.
+original chain in the current buffer via a `:Replace` call, then inserts the
+`local alias = chain` declaration. Only for suggestions that are an
+assignment (the `regex`, `treesitter` and `python` analyzers); the
+`javascript` and `perf` analyzers just insert their suggestion.
 
 - **Module:** `float/autocmds.lua`
 - **Usercmds:** `:Recommender -r` / `:Recommender --replace`

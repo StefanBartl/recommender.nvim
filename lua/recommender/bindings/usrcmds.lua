@@ -558,7 +558,7 @@ function M.setup(cfg)
             name = "replace",
             short = "r",
             bool = true,
-            desc = "After picking, replace every occurrence of the chain via :Replace",
+            desc = "On pick, replace the chain in this buffer via :Replace (not javascript, perf)",
           },
           {
             name = "cwd",

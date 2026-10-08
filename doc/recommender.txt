@@ -392,13 +392,18 @@ Enabled with `-r` or `--replace`. When `Enter` is pressed in the float:
 
 1. The plugin looks for a `:Replace` user command (`vim.fn.exists(":Replace") == 2`).
 2. If found, it runs `:Replace <chain> <alias_var> %` to substitute all
-   occurrences of the chain in the buffer with the alias name.
+   occurrences of the chain in the current buffer with the alias name (never
+   in the other files a `path` or `cwd` scope scanned).
 3. A one-shot `WinClosed` autocmd detects when the replace prompt (a
    TelescopePrompt window) closes.
 4. After the replace, the `local alias = chain` declaration is inserted.
 
 If `:Replace` is not available, replace mode falls back to a plain alias
-insert (same as normal mode).
+insert (same as normal mode). The same happens when the suggestion is not an
+assignment: the `javascript` analyzer (`const x = chain;`) and the `perf`
+analyzer (an advisory comment) only ever insert the suggestion, with or
+without `-r`. `regex`, `treesitter` (`local x = chain`) and `python`
+(`x = chain`) are replaced.
 
 The detection mechanism is event-driven — no polling, no timers, no race
 conditions. The autocmd is removed immediately after firing.
