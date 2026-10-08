@@ -85,6 +85,26 @@ for _, name in ipairs(SCOPE_NAMES) do
   COMPLETION_VALUES[#COMPLETION_VALUES + 1] = name
 end
 
+---One line per completion value, for the option float. The three positional
+---slots are interchangeable (`classify_pos_args`), so they share this table.
+---@type table<string, string>
+local COMPLETION_DESC = {
+  regex = "Analyzer: Lua chains by pattern, no parser needed",
+  treesitter = "Analyzer: Lua chains via Tree-sitter, needs the Lua parser",
+  javascript = "Analyzer: JavaScript/TypeScript chains",
+  python = "Analyzer: Python chains",
+  perf = "Analyzer: Lua performance anti-patterns, not chains",
+  buffer = "Scope: the current buffer (default)",
+  path = "Scope: files under the current buffer's directory",
+  cwd = "Scope: every matching file under the cwd",
+  cfile = "Scope: the file name under the cursor",
+  line = "Scope: the current line (threshold defaults to 1)",
+}
+
+---Text of the three positional slots, for the option float.
+---@type string
+local POSITIONAL_DESC = "Analyzer, scope or threshold number; one of each, any order"
+
 ---Analyzer names that support non-buffer scope (see `project.supports_cwd`),
 ---computed once so the error message below can never drift out of sync with
 ---`project.lua`'s actual EXTENSIONS table.
@@ -508,9 +528,30 @@ function M.setup(cfg)
       {
         path = {},
         args = {
-          { name = "a1", type = "STRING", values = COMPLETION_VALUES, optional = true },
-          { name = "a2", type = "STRING", values = COMPLETION_VALUES, optional = true },
-          { name = "a3", type = "STRING", values = COMPLETION_VALUES, optional = true },
+          {
+            name = "a1",
+            type = "STRING",
+            values = COMPLETION_VALUES,
+            optional = true,
+            desc = POSITIONAL_DESC,
+            enum_desc = COMPLETION_DESC,
+          },
+          {
+            name = "a2",
+            type = "STRING",
+            values = COMPLETION_VALUES,
+            optional = true,
+            desc = POSITIONAL_DESC,
+            enum_desc = COMPLETION_DESC,
+          },
+          {
+            name = "a3",
+            type = "STRING",
+            values = COMPLETION_VALUES,
+            optional = true,
+            desc = POSITIONAL_DESC,
+            enum_desc = COMPLETION_DESC,
+          },
         },
         flags = {
           {
