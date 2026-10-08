@@ -46,7 +46,7 @@ misleading failures.
 | `util_lib_spec.lua` | `util/lib.lua`'s notify/keymap fallback when `lib.nvim` is hidden, `util/notify.lua`'s delegation, `util/progress.lua`'s load-time availability capture |
 | `statusline_spec.lua` | the buffer/changedtick cache, and the `""` fallback for "no suggestions" and every failure mode alike |
 | `usrcmds_spec.lua` | `bindings/usrcmds.lua`'s pure dispatch helpers: `classify_pos_args`'s order-independent scope/analyzer/threshold classification, `resolve_cfile`'s literal → buffer-relative → `'path'` resolution order |
-| `usrcmds_help_spec.lua` | every flag of `:Recommender` has a line in lib.nvim's option float: `composer.help.undocumented("Recommender")` is empty |
+| `usrcmds_help_spec.lua` | every flag and positional slot of `:Recommender` has a line in lib.nvim's option float: `composer.help.undocumented("Recommender", { args = true })` is empty, each of the ten completion values has a text, and the texts stay one line |
 | `rendering_spec.lua` | `float/rendering.lua`'s pure item-building half (`_internal.build_item`): the "detailed" vs. "compact" `float_layout`s, and the byte-offset highlight spans for the arrow glyph/chain/count/alias |
 | `float_keymaps_spec.lua` | `float/keymaps.lua`'s pure window-selection helpers (`_internal.is_normal_window`, `_internal.find_target_window`): the source_win → alternate window → first-normal-window-in-the-list fallback chain |
 
