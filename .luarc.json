@@ -8,5 +8,5 @@
   "diagnostics.globals": [],
   "diagnostics.unusedLocalExclude": ["_*"],
   "workspace.checkThirdParty": false,
-  "workspace.ignoreDir": [".claude"]
+  "workspace.ignoreDir": [".claude", ".deps"]
 }
