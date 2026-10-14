@@ -36,6 +36,29 @@ function M.invalidate(buf)
   cache[buf] = nil
 end
 
+local cleanup_registered = false
+
+---@internal
+---Drop a buffer's entry when it goes away. Registered the first time the cache
+---is written (not at require time), so requiring this module has no side effect.
+---@return nil
+local function ensure_cleanup()
+  if cleanup_registered then
+    return
+  end
+  local ok_au, au = pcall(require, "lib.nvim.bindings.autocmd")
+  if not ok_au then
+    return
+  end
+  cleanup_registered = true
+  au.create({ "BufDelete", "BufWipeout" }, function(args)
+    cache[args.buf] = nil
+  end, {
+    group = au.group("recommender_statusline", true),
+    desc = "recommender: forget a deleted buffer's statusline count",
+  })
+end
+
 ---@internal
 ---Suggestions for `buf` at its current tick, or nil when the count cannot
 ---be established (unknown analyzer, config not loaded yet, ...).
@@ -74,6 +97,7 @@ local function suggestion_count(buf)
   end
 
   local count = #suggestions
+  ensure_cleanup()
   cache[buf] = { tick = tick, count = count }
   return count
 end
@@ -99,19 +123,6 @@ end
 ---@return string
 function M.lualine_component()
   return M.status()
-end
-
--- Drop a buffer's entry when it goes away. Registered at require time
--- rather than from a setup(): this module is only ever loaded because
--- somebody put the component in their statusline.
-local ok_au, au = pcall(require, "lib.nvim.bindings.autocmd")
-if ok_au then
-  au.create({ "BufDelete", "BufWipeout" }, function(args)
-    cache[args.buf] = nil
-  end, {
-    group = au.group("recommender_statusline", true),
-    desc = "recommender: forget a deleted buffer's statusline count",
-  })
 end
 
 return M
