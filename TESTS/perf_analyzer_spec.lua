@@ -55,6 +55,29 @@ return function(H)
   H.eq(#analyze({ "for i = 1, 3 do table.insert(t, i) end" }), 1, "a single-line for is loop context for its own body")
   H.eq(#analyze({ "if x then table.insert(t, 1) end" }), 0, "a single-line if is not")
 
+  -- Two- and three-argument insert are told apart -------------------------------
+  -- `table.insert(t, pos, v)` shifts the tail, `t[#t+1] = v` cannot replace it.
+  H.eq(#analyze({ "for i = 1, 10 do", "  table.insert(t, 1, i)", "end" }), 0, "the three-argument insert is not reported")
+  H.eq(
+    #analyze({ "for i = 1, 10 do", "  table.insert(t, { a = 1, b = 2 })", "end" }),
+    1,
+    "a comma inside a table constructor does not make a second argument"
+  )
+  H.eq(#analyze({ "for i = 1, 10 do", "  table.insert(t, f(a, b))", "end" }), 1, "nor does a comma inside a nested call")
+  H.eq(#analyze({ "for i = 1, 10 do", "  table.insert(t, 'a,b')", "end" }), 1, "nor one inside a string")
+  H.eq(
+    #analyze({ "for i = 1, 10 do", "  table.insert(t, 1, i); table.insert(u, i)", "end" }),
+    1,
+    "a line with both forms still reports the appending one"
+  )
+  H.eq(
+    #analyze({ "for i = 1, 10 do", "  table.insert(", "    t, v)", "end" }),
+    1,
+    "a call that does not close on its line is still reported"
+  )
+  local fmt = analyze({ "for i = 1, 10 do", "  local s = string.format('%d', i)", "end" })
+  H.ok(fmt[1].alias:find("plain join", 1, true), "the string.format tip names its limit")
+
   -- The other three patterns --------------------------------------------------
   local chains = {}
   for _, r in
