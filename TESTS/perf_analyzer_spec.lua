@@ -78,6 +78,13 @@ return function(H)
   local fmt = analyze({ "for i = 1, 10 do", "  local s = string.format('%d', i)", "end" })
   H.ok(fmt[1].alias:find("plain join", 1, true), "the string.format tip names its limit")
 
+  -- The help file and the feature doc state the same limits as the code.
+  for _, path in ipairs({ "doc/recommender.txt", "docs/FEATURES.md" }) do
+    local text = table.concat(vim.fn.readfile(vim.fn.getcwd() .. "/" .. path), "\n")
+    H.ok(text:find("three-argument", 1, true), path .. " names the three-argument table.insert exception")
+    H.ok(text:find("plain join", 1, true), path .. " names the limit of the string.format tip")
+  end
+
   -- The other three patterns --------------------------------------------------
   local chains = {}
   for _, r in
