@@ -4,7 +4,7 @@
 ---@description
 --- Four fixed patterns, each backed by a concrete benchmark (see
 --- docs/FEATURES.md#perf-analyzer): `table.insert` in a loop (~4-5x slower
---- than indexed assignment), a self-referential `x = x .. y` concat
+--- than indexed assignment; the three-argument insert at a position is not reported), a self-referential `x = x .. y` concat
 --- accumulator in a loop (O(n^2) vs `table.concat`'s O(n)), an `ipairs`
 --- loop (~2x slower than a numeric `for`), and `string.format` in a loop
 --- (~3x slower than `..`). Deliberately narrow: dotted-chain aliasing
@@ -32,13 +32,71 @@ local TIPS = {
   ["table.insert(...)"] = "-- perf: table.insert(t, v) in a loop is ~4-5x slower than t[#t+1] = v or t[i] = v (indexed assignment)",
   ["ipairs(...)"] = "-- perf: ipairs() loop is ~2x slower than 'for i = 1, #t do' -- prefer the numeric form in hot loops",
   ["x = x .. y (concat accumulator)"] = "-- perf: a self-concat accumulator in a loop is O(n^2) -- collect pieces in a table and table.concat() once instead",
-  ["string.format(...)"] = "-- perf: string.format() in a loop is ~3x slower than '..' concatenation -- reserve it for one-off formatting",
+  ["string.format(...)"] = "-- perf: string.format() in a loop is ~3x slower than '..' concatenation -- only a plain join is equivalent (not %5.2f or many operands), so reserve it for one-off formatting",
 }
 
 ---Iteration order for the result list (counts decide final sort; this only
 ---seeds a stable key set).
 ---@type string[]
 local KEYS = { "table.insert(...)", "ipairs(...)", "x = x .. y (concat accumulator)", "string.format(...)" }
+
+---@internal
+---Number of top-level arguments of the call whose `(` is at `open`, or nil when
+---the call does not close on this line (a multi-line call cannot be counted).
+---Brackets, braces and quoted strings are skipped, so a comma inside a table
+---constructor or a string does not split an argument.
+---@param line string
+---@param open integer  index of the `(`
+---@return integer|nil
+local function call_arg_count(line, open)
+  local depth, args, quote = 0, 1, nil
+  local i = open
+  while i <= #line do
+    local c = line:sub(i, i)
+    if quote then
+      if c == "\\" then
+        i = i + 1
+      elseif c == quote then
+        quote = nil
+      end
+    elseif c == '"' or c == "'" then
+      quote = c
+    elseif c == "(" or c == "{" or c == "[" then
+      depth = depth + 1
+    elseif c == ")" or c == "}" or c == "]" then
+      depth = depth - 1
+      if depth == 0 then
+        return args
+      end
+    elseif c == "," and depth == 1 then
+      args = args + 1
+    end
+    i = i + 1
+  end
+  return nil
+end
+
+---@internal
+---Whether `line` has a `table.insert(t, v)` that appends. The three-argument
+---`table.insert(t, pos, v)` shifts the elements behind `pos`, which indexed
+---assignment cannot replace, so it is not what the tip is about. A call that
+---does not close on the line is counted: it is the common form and the tip is
+---advisory.
+---@param line string
+---@return boolean
+local function has_append_insert(line)
+  local from = 1
+  while true do
+    local s, e = line:find("table%.insert%s*%(", from)
+    if not s then
+      return false
+    end
+    if call_arg_count(line, e) ~= 3 then
+      return true
+    end
+    from = e + 1
+  end
+end
 
 ---@internal
 ---Grab the last "word" of a trimmed line, ignoring trailing punctuation
@@ -154,7 +212,7 @@ function M.analyze(threshold, custom_aliases, bl, lines)
     local scanning_in_loop = (kind == "single" and is_loop) or in_loop()
 
     if (kind == "content" or kind == "single") and scanning_in_loop then
-      if line:find("table%.insert%s*%(") then
+      if has_append_insert(line) then
         counts["table.insert(...)"] = (counts["table.insert(...)"] or 0) + 1
       end
       if line:find("string%.format%s*%(") then
