@@ -79,7 +79,7 @@ end
 ---Build the <CR> handler passed to `rendering.open()`: inserts (or, in
 ---replace mode, dispatches :Replace for) the chosen suggestion's alias.
 ---@param state table  Recommender state table (visible, ignored, replace_mode, …)
----@return fun(item: {chain:string, count:integer, alias:string})
+---@return fun(item: Recommender.Suggestion)
 function M.make_on_select(state)
   return function(item)
     local target_win = find_target_window()
@@ -87,12 +87,6 @@ function M.make_on_select(state)
       notify.warn("No suitable window for insertion")
       return
     end
-
-    --- CDX: `_pending_insert` is written here and cleared below but never read
-    --- anywhere in the repo — dead state left from an earlier insert path
-    --- (replace-mode insertion now goes through `float/autocmds.lua`'s
-    --- WinClosed hook). Drop it, or wire a reader.
-    state._pending_insert = { win = target_win, text = item.alias }
 
     schedule(function()
       if not api.nvim_win_is_valid(target_win) then
@@ -125,11 +119,9 @@ function M.make_on_select(state)
           vim.cmd({ cmd = "Replace", args = { item.chain, var_name, "%" } })
         else
           api.nvim_put({ item.alias }, "l", false, true)
-          state._pending_insert = nil
         end
       else
         api.nvim_put({ item.alias }, "l", false, true)
-        state._pending_insert = nil
       end
     end)
   end

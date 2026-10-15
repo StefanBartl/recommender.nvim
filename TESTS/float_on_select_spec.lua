@@ -21,6 +21,10 @@ return function(H)
 
   H.eq(vim.fn.exists(":Replace"), 0, "sanity: no :Replace command exists before the spec defines its own")
 
+  ---The state table the last `pick` handed to the handler.
+  ---@type table
+  local last_state = {}
+
   ---@param buf integer
   ---@param text string
   ---@return boolean
@@ -49,7 +53,8 @@ return function(H)
       end, { nargs = "*" })
     end
 
-    fk.make_on_select({ replace_mode = true })(suggestion)
+    last_state = { replace_mode = true }
+    fk.make_on_select(last_state)(suggestion)
     -- The handler defers its work; it is done once :Replace ran or the alias line is in the buffer.
     H.wait_until(function()
       return #calls > 0 or has_line(buf, suggestion.alias)
@@ -84,6 +89,7 @@ return function(H)
   H.eq(calls[1][1], "vim.api", "... on the chain")
   H.eq(calls[1][2], "api", "... with the alias name as the replacement")
   H.falsy(inserted, "... and the alias line waits for the replace prompt to close")
+  H.eq(vim.tbl_count(last_state), 1, "... and picking leaves no state of its own behind (no _pending_insert)")
 
   calls, inserted = pick(python, true)
   H.eq(#calls, 1, "a python suggestion (x = chain) dispatches :Replace once")
