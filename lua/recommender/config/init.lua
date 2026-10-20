@@ -13,14 +13,6 @@ local DEFAULTS = require("recommender.config.DEFAULTS")
 
 local M = {}
 
----@type Recommender.Config
-local _active = vim.deepcopy(DEFAULTS)
-
----Issues found by the last `setup()` call (unknown keys, rejected values),
----for `:checkhealth`. Empty when the config was clean.
----@type string[]
-local _issues = {}
-
 ---@type string[]
 local PROGRESS_STYLES = { "auto", "notify", "statusline", "fidget", "float", "kit" }
 ---@type string[]
@@ -168,68 +160,59 @@ local function validate_table(opts, field, issues)
   end
 end
 
----@internal
----Copy `src` into `dst` in place: a sub-table `dst` already has keeps its
----identity, only its contents change. `bindings/usrcmds.lua` captures
----`M.get()`'s table in the `:Recommender` command's `run` closure for the
----rest of the session — replacing it wholesale on a second `setup()` would
----silently decouple that closure from the new values (ERR-53).
----@param dst table
----@param src table
-local function deep_assign(dst, src)
-  for k in pairs(dst) do
-    if src[k] == nil then
-      dst[k] = nil
-    end
-  end
-  for k, v in pairs(src) do
-    if type(v) == "table" and type(dst[k]) == "table" then
-      deep_assign(dst[k], v)
-    else
-      dst[k] = v
-    end
-  end
+--- To the schema that `lib.lua.config` infers from `DEFAULTS`, every option is open: the checks are
+--- `SCHEMA` above and the validators, run before the merge. An unknown top-level key is caught
+--- there as well.
+local ANY = "boolean|number|string|table|function"
+---@type table<string, string>
+local LIB_SCHEMA = {}
+for key in pairs(SCHEMA) do
+  LIB_SCHEMA[key] = ANY
 end
 
----Merge user options over the defaults and store the result. Unknown keys
----(typos included) and an invalid `analyzer`/`progress_style`/`float_layout`/
----`threshold`/`cwd_max_files`/`blacklist`/`custom_aliases`/`cwd_ignore` are
----reported here, before the merge, and dropped rather than silently kept —
----see `M.issues()`.
+local cfg = require("lib.lua.config").new(DEFAULTS, {
+  name = "recommender",
+  schema = LIB_SCHEMA,
+  -- `bindings/usrcmds.lua` captures `M.get()`'s table once, in the `:Recommender` command's
+  -- `run` closure, for the rest of the session: a second `setup()` has to write into that
+  -- table, not replace it (ERR-53).
+  stable = true,
+  normalize = function(incoming, issues)
+    drop_unknown(incoming, issues)
+    validate_analyzer(incoming, issues)
+    validate_enum(incoming, "progress_style", PROGRESS_STYLES, issues)
+    validate_enum(incoming, "float_layout", FLOAT_LAYOUTS, issues)
+    -- threshold: "any positive integer" (doc/recommender.txt); cwd_max_files:
+    -- 0 means unbounded, so its floor is 0 rather than 1.
+    validate_min_integer(incoming, "threshold", 1, issues)
+    validate_min_integer(incoming, "cwd_max_files", 0, issues)
+    validate_table(incoming, "blacklist", issues)
+    validate_table(incoming, "custom_aliases", issues)
+    validate_table(incoming, "cwd_ignore", issues)
+  end,
+})
+
+---Set the options over the defaults and store the result. Every call starts from `DEFAULTS`.
+---Unknown keys (typos included) and an invalid `analyzer`/`progress_style`/`float_layout`/
+---`threshold`/`cwd_max_files`/`blacklist`/`custom_aliases`/`cwd_ignore` are reported here,
+---before the merge, and dropped rather than silently kept — see `M.issues()`.
 ---@param opts Recommender.Config|nil
 ---@return Recommender.Config
 function M.setup(opts)
-  local issues = {}
-  local incoming = (type(opts) == "table") and vim.deepcopy(opts) or {}
-
-  drop_unknown(incoming, issues)
-  validate_analyzer(incoming, issues)
-  validate_enum(incoming, "progress_style", PROGRESS_STYLES, issues)
-  validate_enum(incoming, "float_layout", FLOAT_LAYOUTS, issues)
-  -- threshold: "any positive integer" (doc/recommender.txt); cwd_max_files:
-  -- 0 means unbounded, so its floor is 0 rather than 1.
-  validate_min_integer(incoming, "threshold", 1, issues)
-  validate_min_integer(incoming, "cwd_max_files", 0, issues)
-  validate_table(incoming, "blacklist", issues)
-  validate_table(incoming, "custom_aliases", issues)
-  validate_table(incoming, "cwd_ignore", issues)
-  _issues = issues
-
-  local merged = vim.tbl_deep_extend("force", vim.deepcopy(DEFAULTS), incoming)
-  deep_assign(_active, merged)
-  return _active
+  cfg.setup(type(opts) == "table" and opts or nil)
+  return cfg.get()
 end
 
 ---@return Recommender.Config
 function M.get()
-  return _active
+  return cfg.get()
 end
 
 ---Validation issues from the last `setup()` call (unknown keys, rejected
 ---values), for `:checkhealth`. Empty when the config was clean.
 ---@return string[]
 function M.issues()
-  return _issues
+  return cfg.issues()
 end
 
 return M
