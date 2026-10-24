@@ -12,7 +12,7 @@
 ---
 --- Same convention as the rest of the StefanBartl/*.nvim ecosystem
 --- (reposcope.nvim's `utils/progress.lua`, replacer.nvim's `rg.lua`,
---- documentation.nvim's `bindings/progress.lua`): one `create()` per
+--- docmap.nvim's `bindings/progress.lua`): one `create()` per
 --- operation, style read from `config.progress_style` at call time so
 --- `setup()` ordering never matters, `nil` returned (never an error) when
 --- `lib.nvim.progress` isn't available — every call site guards with
