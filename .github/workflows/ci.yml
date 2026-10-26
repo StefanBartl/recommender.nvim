@@ -60,7 +60,7 @@ jobs:
       # scripts/test.sh resolves (after $LIB_NVIM_DIR and .deps/).
       - uses: actions/checkout@v5
         with:
-          repository: StefanBartl/lib.nvim
+          repository: WKDSteve/lib.nvim
           path: lib.nvim
           ref: ci-verified
 
@@ -72,14 +72,14 @@ jobs:
       # Checked out from the branch that only moves once the dependency's own CI is green.
       - uses: actions/checkout@v5
         with:
-          repository: "StefanBartl/testing.nvim"
+          repository: "WKDSteve/testing.nvim"
           path: testing.nvim
           ref: ci-verified
 
       # Checked out from the branch that only moves once the dependency's own CI is green.
       - uses: actions/checkout@v5
         with:
-          repository: "StefanBartl/ui.nvim"
+          repository: "WKDSteve/ui.nvim"
           path: ui.nvim
           ref: ci-verified
 

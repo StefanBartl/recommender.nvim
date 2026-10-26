@@ -12,7 +12,7 @@ prefix as a group; it does not register the individual keys.
 Installed by `setup()` unless `config.keymaps == false` (default: enabled).
 
 Each is a named action, declared through
-[`lib.nvim.bindings.keymap`](https://github.com/StefanBartl/lib.nvim) and
+[`lib.nvim.bindings.keymap`](https://github.com/WKDSteve/lib.nvim) and
 individually overridable — `config.keymaps` used to be a boolean, so a
 colliding `<leader>lr` meant all eight or none:
 

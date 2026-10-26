@@ -36,7 +36,7 @@ set statusline+=%{v:lua.require('recommender.statusline').status()}
 
 ### ui.nvim
 
-Nothing to do. [ui.nvim](https://github.com/StefanBartl/ui.nvim) ships a
+Nothing to do. [ui.nvim](https://github.com/WKDSteve/ui.nvim) ships a
 `recommender_badge` segment that calls this module; enable it in your
 statusline variant and it appears when there is something to show.
 
@@ -67,8 +67,8 @@ It used to live in ui.nvim, which reached into `recommender.config` and
 until one of those is renamed, and no test in this repository would have
 caught it.
 
-Two siblings — [sandbox.nvim](https://github.com/StefanBartl/sandbox.nvim)
-and [sessions.nvim](https://github.com/StefanBartl/sessions.nvim) — already
+Two siblings — [sandbox.nvim](https://github.com/WKDSteve/sandbox.nvim)
+and [sessions.nvim](https://github.com/WKDSteve/sessions.nvim) — already
 shipped their own component, with ui.nvim reduced to a thin adapter over
 it. This closes the same gap here: the plugin owns how it presents itself,
 and ui.nvim only places it.

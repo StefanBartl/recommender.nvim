@@ -176,7 +176,7 @@ assignment (the `regex`, `treesitter` and `python` analyzers); the
 - **Keymaps:** `<leader>lR` ([global keymaps](BINDINGS.md#global-keymaps))
 
 Requires a `:Replace` user command from another plugin —
-[replacer.nvim](https://github.com/StefanBartl/replacer.nvim) provides one.
+[replacer.nvim](https://github.com/WKDSteve/replacer.nvim) provides one.
 Detection of "the replace finished" is event-driven: a one-shot `WinClosed`
 autocmd watches for the `TelescopePrompt` window closing, then removes
 itself immediately after firing. No polling, no timers.

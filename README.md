@@ -16,10 +16,10 @@
 [![Neovim](https://img.shields.io/badge/Neovim-0.9%2B-57A143?logo=neovim&logoColor=white)](https://neovim.io)
 [![Lua](https://img.shields.io/badge/Lua-5.1%2FLuaJIT-2C2D72?logo=lua&logoColor=white)](https://www.lua.org)
 ![Status](https://img.shields.io/badge/status-beta-orange)
-[![CI](https://github.com/StefanBartl/recommender.nvim/actions/workflows/ci.yml/badge.svg)](https://github.com/StefanBartl/recommender.nvim/actions/workflows/ci.yml)
-[![wkd](https://img.shields.io/badge/wkd-family-c6ff3d)](https://stefanbartl.github.io/wkd/p/recommender/)
+[![CI](https://github.com/WKDSteve/recommender.nvim/actions/workflows/ci.yml/badge.svg)](https://github.com/WKDSteve/recommender.nvim/actions/workflows/ci.yml)
+[![wkd](https://img.shields.io/badge/wkd-family-c6ff3d)](https://wkdsteve.github.io/wkd/p/recommender/)
 
-> Part of the [wkd](https://stefanbartl.github.io/wkd/) family — see this plugin's [page](https://stefanbartl.github.io/wkd/p/recommender/) on the site.
+> Part of the [wkd](https://wkdsteve.github.io/wkd/) family — see this plugin's [page](https://wkdsteve.github.io/wkd/p/recommender/) on the site.
 
 Finds the repetition in your code and offers to do something about it. It
 reads a buffer — or a wider scope — for dotted chains repeated often enough to
@@ -30,25 +30,25 @@ leaving it. Pure Neovim, no external tooling.
 
 ## Around it
 
-> **[replacer.nvim](https://github.com/StefanBartl/replacer.nvim)** — provides
+> **[replacer.nvim](https://github.com/WKDSteve/replacer.nvim)** — provides
 > the `:Replace` command that replace mode drives. Without it a suggestion
 > still inserts its declaration; it just does not rewrite the occurrences.
 >
-> **[insights.nvim](https://github.com/StefanBartl/insights.nvim)** — the other
+> **[insights.nvim](https://github.com/WKDSteve/insights.nvim)** — the other
 > half of "what is actually in this code": imports, symbols, and the magic
 > numbers this plugin does not look for.
 >
-> **[runtime-analysis.nvim](https://github.com/StefanBartl/runtime-analysis.nvim)** —
+> **[runtime-analysis.nvim](https://github.com/WKDSteve/runtime-analysis.nvim)** —
 > where a claim about performance gets measured rather than assumed. The perf
 > analyzer exists because that question was asked of this plugin's own premise.
 >
-> **[ui.nvim](https://github.com/StefanBartl/ui.nvim)** — required: its
+> **[ui.nvim](https://github.com/WKDSteve/ui.nvim)** — required: its
 > `ui.kit` module renders the suggestion float itself, and also shows how
 > many suggestions are open for the current buffer as a statusline badge.
 >
 > Of the above, only replacer.nvim is soft — without it a suggestion still
 > inserts its declaration, it just doesn't rewrite the occurrences.
-> [lib.nvim](https://github.com/StefanBartl/lib.nvim) and ui.nvim are both
+> [lib.nvim](https://github.com/WKDSteve/lib.nvim) and ui.nvim are both
 > required — see [Requirements](docs/installation.md#requirements).
 
 ---
@@ -80,7 +80,7 @@ question each page answers.
 - [Architecture](docs/architecture.md) — module layout and design principles.
 - [Troubleshooting](docs/troubleshooting.md) — what `:checkhealth recommender` asks.
 - [Contributing](docs/CONTRIBUTING.md) — ground rules, project layout, and how to add an analyzer.
-- [Feedback](https://github.com/StefanBartl/recommender.nvim/issues) — bugs, feature requests and usage questions; broader discussion in [Discussions](https://github.com/StefanBartl/recommender.nvim/discussions).
+- [Feedback](https://github.com/WKDSteve/recommender.nvim/issues) — bugs, feature requests and usage questions; broader discussion in [Discussions](https://github.com/WKDSteve/recommender.nvim/discussions).
 
 `:help recommender` is the same reference inside the editor.
 

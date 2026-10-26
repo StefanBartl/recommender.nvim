@@ -128,7 +128,7 @@ Enabled with the `-r` / `--replace` flag. When replace mode is active, pressing 
 1. Runs `:Replace <chain> <alias> %` to substitute all occurrences in the current buffer (never in the other files a `path` or `cwd` scope scanned).
 2. After the replace completes, inserts the `local alias = chain` declaration.
 
-**Requires** a `:Replace` user command to be available (e.g., from a surround/replace plugin). [replacer.nvim](https://github.com/StefanBartl/replacer.nvim) provides one.
+**Requires** a `:Replace` user command to be available (e.g., from a surround/replace plugin). [replacer.nvim](https://github.com/WKDSteve/replacer.nvim) provides one.
 
 Only suggestions whose declaration is an assignment (`local x = chain` from the `regex` and `treesitter` analyzers, `x = chain` from `python`) are replaced. The `javascript` analyzer (`const x = chain;`) and the `perf` analyzer (an advisory comment) get a plain insert of the suggestion, exactly as without `-r`; so does any analyzer when no `:Replace` command exists.
 

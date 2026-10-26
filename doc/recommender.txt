@@ -48,7 +48,7 @@ navigation, insert, yank, and batch-insert keymaps.
 2. REQUIREMENTS                                *recommender-requirements*
 
   * Neovim >= 0.9
-  * lib.nvim (StefanBartl/lib.nvim) — required; `:Recommender` is registered
+  * lib.nvim (WKDSteve/lib.nvim) — required; `:Recommender` is registered
     via `lib.nvim.bindings.usercmd.composer`, with no fallback (`notify`/`map`
     specifically still degrade to a native fallback if somehow absent at
     that call site, but the command layer itself does not)
@@ -60,8 +60,8 @@ navigation, insert, yank, and batch-insert keymaps.
 
 lazy.nvim: >
   {
-    "StefanBartl/recommender.nvim",
-    dependencies = { "StefanBartl/lib.nvim" },
+    "WKDSteve/recommender.nvim",
+    dependencies = { "WKDSteve/lib.nvim" },
     ft  = { "lua" },
     cmd = { "Recommender" },
     config = function()
@@ -71,16 +71,16 @@ lazy.nvim: >
 <
 packer.nvim: >
   use {
-    "StefanBartl/recommender.nvim",
-    requires = { "StefanBartl/lib.nvim" },
+    "WKDSteve/recommender.nvim",
+    requires = { "WKDSteve/lib.nvim" },
     config = function()
       require("recommender").setup()
     end,
   }
 <
 vim-plug: >
-  Plug 'StefanBartl/lib.nvim'
-  Plug 'StefanBartl/recommender.nvim'
+  Plug 'WKDSteve/lib.nvim'
+  Plug 'WKDSteve/recommender.nvim'
 
   lua require("recommender").setup()
 <

@@ -76,7 +76,7 @@ in practice:
 ```
 
 That runs `:Replace vim.api.nvim_buf_set_lines api.nvim_buf_set_lines %`
-(via whatever plugin provides `:Replace` — [replacer.nvim](https://github.com/StefanBartl/replacer.nvim)
+(via whatever plugin provides `:Replace` — [replacer.nvim](https://github.com/WKDSteve/replacer.nvim)
 is the one this plugin is built to pair with) and only *after* that
 replace's prompt window closes does it insert the `local api = vim.api`
 declaration. **This means `-r` adds nothing without a `:Replace` command

@@ -23,7 +23,7 @@ function M.check()
   else
     vim.health.error(
       ":Recommender will fail to register — lib.nvim.bindings.usercmd.composer not found",
-      { "Install StefanBartl/lib.nvim" }
+      { "Install WKDSteve/lib.nvim" }
     )
   end
 
@@ -32,7 +32,7 @@ function M.check()
   else
     vim.health.error(
       "ui.kit not found — require('recommender').setup() will fail to register :Recommender",
-      { "Install StefanBartl/ui.nvim" }
+      { "Install WKDSteve/ui.nvim" }
     )
   end
 

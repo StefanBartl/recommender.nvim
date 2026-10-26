@@ -1,7 +1,7 @@
 # Contributing to recommender.nvim
 
 Thank you for your interest! Bugs, ideas and questions are welcome in the
-[issue tracker](https://github.com/StefanBartl/recommender.nvim/issues); pull
+[issue tracker](https://github.com/WKDSteve/recommender.nvim/issues); pull
 requests very welcome.
 
 ## Getting the repository into a session
@@ -14,7 +14,7 @@ vim.opt.rtp:prepend("/path/to/recommender.nvim")
 require("recommender").setup({})
 ```
 
-[lib.nvim](https://github.com/StefanBartl/lib.nvim) has to be on the runtime
+[lib.nvim](https://github.com/WKDSteve/lib.nvim) has to be on the runtime
 path too — `:Recommender` is registered through its user-command composer and
 does not exist without it. Nothing else is required.
 
@@ -93,7 +93,7 @@ project walk.
 bash scripts/test.sh
 ```
 
-This runs [testing.nvim](https://github.com/StefanBartl/testing.nvim); it and
+This runs [testing.nvim](https://github.com/WKDSteve/testing.nvim); it and
 the dependencies (lib.nvim, ui.nvim) are found via `$<NAME>_DIR`, `.deps/<name>`,
 a sibling checkout or the plugin manager's copy, and a missing one is a loud
 error. Exit 0 is a pass. [GitHub Actions](../.github/workflows/ci.yml) runs it plus

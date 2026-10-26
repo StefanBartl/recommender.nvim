@@ -8,7 +8,7 @@ bash scripts/test.sh                # all specs
 bash scripts/test.sh --file config   # only spec files whose name contains "config"
 ```
 
-The runner is [testing.nvim](https://github.com/StefanBartl/testing.nvim),
+The runner is [testing.nvim](https://github.com/WKDSteve/testing.nvim),
 configured by `.testing.lua` (dialect `h`: the specs run on `TESTS/harness.lua`).
 It prints one line per spec and exits non-zero on a failure (or when a
 dependency is missing). CI runs exactly this script.
