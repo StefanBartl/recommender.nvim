@@ -160,13 +160,24 @@ end
 
 ---@internal
 ---Net change of table-constructor depth over `line`: `{` minus `}`, skipping
----quoted strings and a trailing `--` comment. Long strings/comments spanning
----lines are not tracked (the analyzer is line-based and advisory).
+---quoted strings, `--` comments and long brackets (`[[ ]]`, `[==[ ]==]`,
+---`--[[ ]]`). A long bracket left open at the end of the line is returned as
+---its closing delimiter and passed back in for the next line, so a brace in a
+---multi-line long string or block comment never shifts the depth.
 ---@param line string
----@return integer
-local function brace_delta(line)
+---@param long_close string|nil  Closing delimiter of a long bracket open from an earlier line.
+---@return integer delta
+---@return string|nil long_close  Closing delimiter still open at the end of `line`.
+local function brace_delta(line, long_close)
   local delta, quote = 0, nil
   local i = 1
+  if long_close then
+    local _, e = line:find(long_close, 1, true)
+    if not e then
+      return 0, long_close
+    end
+    i = e + 1
+  end
   while i <= #line do
     local c = line:sub(i, i)
     if quote then
@@ -177,16 +188,27 @@ local function brace_delta(line)
       end
     elseif c == '"' or c == "'" then
       quote = c
-    elseif c == "-" and line:sub(i + 1, i + 1) == "-" then
-      break
-    elseif c == "{" then
-      delta = delta + 1
-    elseif c == "}" then
-      delta = delta - 1
+    else
+      local comment = c == "-" and line:sub(i + 1, i + 1) == "-"
+      local open = line:match("^%[(=*)%[", comment and i + 2 or i)
+      if open then
+        local close = "]" .. open .. "]"
+        local _, e = line:find(close, (comment and i + 2 or i) + #open + 2, true)
+        if not e then
+          return delta, close
+        end
+        i = e
+      elseif comment then
+        break
+      elseif c == "{" then
+        delta = delta + 1
+      elseif c == "}" then
+        delta = delta - 1
+      end
     end
     i = i + 1
   end
-  return delta
+  return delta, nil
 end
 
 ---@internal
@@ -223,12 +245,15 @@ function M.analyze(threshold, custom_aliases, bl, lines)
   -- declared directly in it. The names are what tell an accumulator apart
   -- from a variable that merely looks like one -- see `declared_in_loop`.
   -- `braces` is the table-constructor depth at the start of the current line;
-  -- each frame remembers the depth it was opened at, so a line deeper than its
+  -- each frame remembers the depth its body starts at (after the opener line),
+  -- so a line deeper than its
   -- innermost frame sits inside a (multi-line) constructor: `dir = dir .. x`
   -- there is a field, not an assignment.
   ---@type { is_loop: boolean, locals: table<string, true>, braces: integer }[]
   local stack = {}
   local braces = 0
+  ---@type string|nil  closing delimiter of a long string/comment spanning lines
+  local long_close = nil
 
   local function in_loop()
     for _, frame in ipairs(stack) do
@@ -267,6 +292,9 @@ function M.analyze(threshold, custom_aliases, bl, lines)
 
   for _, line in ipairs(lines) do
     local kind, is_loop = classify_line(line)
+    local delta
+    delta, long_close = brace_delta(line, long_close)
+    local braces_after = math.max(0, braces + delta)
 
     local scanning_in_loop = (kind == "single" and is_loop) or in_loop()
 
@@ -306,7 +334,10 @@ function M.analyze(threshold, custom_aliases, bl, lines)
       -- `classify` answers with a boolean for "open"/"single" and nil for the
       -- kinds where the question does not apply; this is the "open" branch.
       ---@cast is_loop boolean
-      local frame = { is_loop = is_loop, locals = {}, braces = braces }
+      -- The depth after the opener line is the body's base: `}) do` closes a
+      -- multi-line iteration literal (`for _, v in ipairs({ ... }) do`) on the
+      -- very line that opens the block.
+      local frame = { is_loop = is_loop, locals = {}, braces = braces_after }
       if is_loop then
         for _, name in ipairs(loop_header_vars(line)) do
           frame.locals[name] = true
@@ -317,7 +348,7 @@ function M.analyze(threshold, custom_aliases, bl, lines)
       stack[#stack] = nil
     end
 
-    braces = math.max(0, braces + brace_delta(line))
+    braces = braces_after
   end
 
   local res = {}

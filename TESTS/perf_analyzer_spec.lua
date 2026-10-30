@@ -234,5 +234,43 @@ return function(H)
       1,
       "an outer table field appended inside a for-in still is"
     )
+
+    -- A brace inside a multi-line long string or block comment is not a
+    -- constructor and must not hide the real accumulator after it.
+    H.eq(
+      accum_count({
+        "local s = ''",
+        "for _, x in pairs(t) do",
+        "  local tpl = [==[",
+        "    function() {",
+        "  ]==]",
+        "  --[[ local cfg = {",
+        "  ]]",
+        "  local one = [[ { ]] .. '{' -- {",
+        "  s = s .. x",
+        "end",
+      }),
+      1,
+      "braces in long strings and comments do not open a constructor"
+    )
+
+    -- `}) do` closes a multi-line iteration literal on the opener line itself:
+    -- the body's base depth is the one after that line, so a constructor in
+    -- the body is still seen as one.
+    H.eq(
+      accum_count({
+        "for _, g in pairs(groups) do",
+        "  for _, v in ipairs({",
+        "    g.a,",
+        "  }) do",
+        "    entries[#entries + 1] = {",
+        "      dir = dir .. v,",
+        "    }",
+        "  end",
+        "end",
+      }),
+      0,
+      "a block opened by `}) do` takes the depth after its line as base"
+    )
   end
 end
