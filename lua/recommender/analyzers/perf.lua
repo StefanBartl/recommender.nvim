@@ -158,6 +158,56 @@ local function classify_line(line)
   return "content", nil
 end
 
+---@internal
+---Net change of table-constructor depth over `line`: `{` minus `}`, skipping
+---quoted strings and a trailing `--` comment. Long strings/comments spanning
+---lines are not tracked (the analyzer is line-based and advisory).
+---@param line string
+---@return integer
+local function brace_delta(line)
+  local delta, quote = 0, nil
+  local i = 1
+  while i <= #line do
+    local c = line:sub(i, i)
+    if quote then
+      if c == "\\" then
+        i = i + 1
+      elseif c == quote then
+        quote = nil
+      end
+    elseif c == '"' or c == "'" then
+      quote = c
+    elseif c == "-" and line:sub(i + 1, i + 1) == "-" then
+      break
+    elseif c == "{" then
+      delta = delta + 1
+    elseif c == "}" then
+      delta = delta - 1
+    end
+    i = i + 1
+  end
+  return delta
+end
+
+---@internal
+---Names a `for` header introduces: the targets of `for a, b in ...` or the
+---counter of `for i = ...`. Each is a fresh binding per iteration, exactly like
+---a `local` declared in the loop body.
+---@param line string
+---@return string[]
+local function loop_header_vars(line)
+  local list = line:match("^%s*for%s+([%w_,%s]-)%s+in%f[%s]")
+  if not list then
+    local counter = line:match("^%s*for%s+([%w_]+)%s*=")
+    return counter and { counter } or {}
+  end
+  local names = {}
+  for name in list:gmatch("[%w_]+") do
+    names[#names + 1] = name
+  end
+  return names
+end
+
 ---Analyze a buffer (or an explicit line list) for the four anti-patterns.
 ---@param threshold integer
 ---@param custom_aliases table<string,string>  Optional per-pattern override for the inserted tip text.
@@ -172,8 +222,13 @@ function M.analyze(threshold, custom_aliases, bl, lines)
   -- One frame per open block: whether it is a loop, and the `local` names
   -- declared directly in it. The names are what tell an accumulator apart
   -- from a variable that merely looks like one -- see `declared_in_loop`.
-  ---@type { is_loop: boolean, locals: table<string, true> }[]
+  -- `braces` is the table-constructor depth at the start of the current line;
+  -- each frame remembers the depth it was opened at, so a line deeper than its
+  -- innermost frame sits inside a (multi-line) constructor: `dir = dir .. x`
+  -- there is a field, not an assignment.
+  ---@type { is_loop: boolean, locals: table<string, true>, braces: integer }[]
   local stack = {}
+  local braces = 0
 
   local function in_loop()
     for _, frame in ipairs(stack) do
@@ -192,9 +247,13 @@ function M.analyze(threshold, custom_aliases, bl, lines)
   ---This is the shape that produced every false positive found when the
   ---analyzer was first run across a real config: `local ident = f(node)`
   ---followed by `ident = ident .. "()"`, three times out of three findings.
+  ---
+  ---A dotted target (`d.message = d.message .. y`) is judged by its root name:
+  ---a fresh `d` per iteration means a fresh field, too.
   ---@param name string
   ---@return boolean
   local function declared_in_loop(name)
+    name = name:match("^[%w_]+") or name
     for i = #stack, 1, -1 do
       if stack[i].locals[name] then
         return true
@@ -222,7 +281,10 @@ function M.analyze(threshold, custom_aliases, bl, lines)
       -- variable of the same name is not mistaken for an assignment to it:
       -- `{ short = short, dir = dir .. "/" .. short }` matched the unanchored
       -- form, and `dir` there is a key, not the target.
-      local accum = line:match("^%s*([%w_%.]+)%s*=%s*[%w_%.]+%s*%.%.")
+      -- The anchor alone cannot see a multi-line constructor (one field per
+      -- line), hence the brace depth against the innermost frame.
+      local in_constructor = braces > (#stack > 0 and stack[#stack].braces or 0)
+      local accum = not in_constructor and line:match("^%s*([%w_%.]+)%s*=%s*[%w_%.]+%s*%.%.")
       if accum and line:match("^%s*([%w_%.]+)%s*=%s*(%1)%s*%.%.") and not declared_in_loop(accum) then
         counts["x = x .. y (concat accumulator)"] = (counts["x = x .. y (concat accumulator)"] or 0) + 1
       end
@@ -244,10 +306,18 @@ function M.analyze(threshold, custom_aliases, bl, lines)
       -- `classify` answers with a boolean for "open"/"single" and nil for the
       -- kinds where the question does not apply; this is the "open" branch.
       ---@cast is_loop boolean
-      stack[#stack + 1] = { is_loop = is_loop, locals = {} }
+      local frame = { is_loop = is_loop, locals = {}, braces = braces }
+      if is_loop then
+        for _, name in ipairs(loop_header_vars(line)) do
+          frame.locals[name] = true
+        end
+      end
+      stack[#stack + 1] = frame
     elseif kind == "close" then
       stack[#stack] = nil
     end
+
+    braces = math.max(0, braces + brace_delta(line))
   end
 
   local res = {}

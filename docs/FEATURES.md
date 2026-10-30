@@ -52,7 +52,7 @@ measurement. `perf` flags only those four — nothing else:
 | Pattern | Flagged when | Measured cost |
 |---|---|---|
 | `table.insert(t, v)` in a loop | inside `for`/`while`/`repeat`; the three-argument `table.insert(t, pos, v)` is not flagged (it shifts elements, which `t[#t+1] = v` cannot replace) | ~4-5x slower than `t[#t+1] = v` / `t[i] = v` |
-| `x = x .. y` accumulator in a loop | self-referential concat (`s = s .. chunk`), inside a loop | O(n²) vs. `table.concat()`'s O(n) |
+| `x = x .. y` accumulator in a loop | self-referential concat (`s = s .. chunk`), inside a loop; not when the target is declared fresh per iteration (a `local` in the loop body or a variable of the loop header, also as `d.field = d.field .. x`) or is a field of a table constructor (single- or multi-line) | O(n²) vs. `table.concat()`'s O(n) |
 | `for _, v in ipairs(t) do` | anywhere (the per-iteration cost is independent of nesting) | ~2x slower than `for i = 1, #t do` |
 | `string.format(...)` in a loop | inside `for`/`while`/`repeat` | ~3x slower than `..` concatenation (equivalent only for a plain join, not for `%5.2f` or many operands) |
 

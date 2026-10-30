@@ -174,5 +174,65 @@ return function(H)
       0,
       "a table field is not an assignment to the variable it reads"
     )
+
+    -- The same field with one field per line: the start-of-line anchor sees
+    -- `dir = dir ..` as an assignment unless the constructor depth is tracked.
+    H.eq(
+      accum_count({
+        "for _, short in pairs(t) do",
+        "  entries[#entries + 1] = {",
+        "    short = short,",
+        "    dir = dir .. '/' .. short,",
+        "  }",
+        "end",
+      }),
+      0,
+      "a field of a multi-line table constructor is not an assignment"
+    )
+
+    -- ...while a real accumulator right after the constructor still counts.
+    H.eq(
+      accum_count({
+        "local s = ''",
+        "for _, short in pairs(t) do",
+        "  entries[#entries + 1] = {",
+        "    dir = dir .. '/' .. short,",
+        "  }",
+        "  s = s .. short",
+        "end",
+      }),
+      1,
+      "the constructor closing restores accumulator detection"
+    )
+
+    -- Loop header variables are fresh per iteration, like a body `local`.
+    H.eq(
+      accum_count({
+        "for _, d in pairs(list) do",
+        "  d.message = d.message .. hint",
+        "end",
+      }),
+      0,
+      "a field of a for-in variable is not an accumulator"
+    )
+    H.eq(
+      accum_count({
+        "for i = 1, n do",
+        "  i = i .. ''",
+        "end",
+      }),
+      0,
+      "the counter of a numeric for is not an accumulator"
+    )
+    H.eq(
+      accum_count({
+        "local out = {}",
+        "for _, d in pairs(list) do",
+        "  out.text = out.text .. d",
+        "end",
+      }),
+      1,
+      "an outer table field appended inside a for-in still is"
+    )
   end
 end
