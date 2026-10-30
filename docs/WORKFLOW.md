@@ -85,9 +85,10 @@ insert of the declaration, as without `-r`. The same plain insert happens for
 the `javascript` and `perf` analyzers, whose suggestions are not a
 `local x = chain` / `x = chain` assignment `:Replace` could be driven with.
 
-Note the detection mechanism is specifically a `WinClosed` autocmd watching
-for a `TelescopePrompt` window — a `:Replace` implementation that doesn't
-use a Telescope-style floating prompt won't trigger the follow-up insert.
+Note the detection mechanism is a `WinClosed` autocmd watching for the
+picker window of replacer.nvim (Telescope's `TelescopePrompt` or fzf-lua's
+`fzf` window) — a `:Replace` implementation with another picker won't
+trigger the follow-up insert; after 5 seconds a warning says so.
 Worth confirming once with whatever `:Replace` provider you actually use,
 rather than assuming any drop-in works.
 

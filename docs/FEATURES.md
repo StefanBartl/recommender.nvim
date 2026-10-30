@@ -178,8 +178,12 @@ assignment (the `regex`, `treesitter` and `python` analyzers); the
 Requires a `:Replace` user command from another plugin —
 [replacer.nvim](https://github.com/WKDSteve/replacer.nvim) provides one.
 Detection of "the replace finished" is event-driven: a one-shot `WinClosed`
-autocmd watches for the `TelescopePrompt` window closing, then removes
-itself immediately after firing. No polling, no timers.
+autocmd watches for the picker window of either replacer.nvim backend
+closing (Telescope's `TelescopePrompt`, fzf-lua's `fzf` terminal), checks the
+buffer on the next tick (both backends apply after closing the window), and
+removes itself. A cancelled `:Replace` (buffer unchanged) inserts nothing. If
+no recognised picker opens within 5 seconds and the buffer is unchanged (no
+matches, or another picker), a warning says the alias was not inserted.
 
 ## Per-buffer ignore
 
