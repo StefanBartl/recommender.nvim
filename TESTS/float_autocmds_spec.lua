@@ -147,6 +147,73 @@ return function(H)
         return api.nvim_buf_get_lines(target_buf, 0, 1, false)[1] == "local z = vim.z"
       end, ft .. ": inserted once the last picker window closed")
     end
+
+    -- Replace-and-reopen in the order replacer really uses: close, apply, and
+    -- only then schedule the reopen. The alias must wait for the reopened
+    -- picker: inserting it after the first apply shifts every line below it,
+    -- and replacer skips the remaining (now stale) matches. ----------------
+    do
+      local target_win, target_buf = target({ "l1", "l2" })
+      local snapshot = api.nvim_buf_get_lines(target_buf, 0, -1, false)
+      local first = open_prompt(ft)
+      fa.register_replace_finish(target_win, snapshot, "local r = vim.r", opts)
+      local reopened ---@type integer?
+      api.nvim_win_close(first, true)
+      api.nvim_buf_set_lines(target_buf, 0, 1, false, { "l1 CHANGED" })
+      vim.schedule(function()
+        reopened = open_prompt(ft)
+      end)
+      flush()
+      H.ok(reopened ~= nil, ft .. ": the reopened picker is open")
+      H.eq(
+        table.concat(api.nvim_buf_get_lines(target_buf, 0, -1, false), "|"),
+        "l1 CHANGED|l2",
+        ft .. ": no insert after the first apply of a replace-and-reopen"
+      )
+      api.nvim_win_close(reopened --[[@as integer]], true)
+      api.nvim_buf_set_lines(target_buf, 1, 2, false, { "l2 CHANGED" })
+      H.wait_until(function()
+        return api.nvim_buf_get_lines(target_buf, 0, 1, false)[1] == "local r = vim.r"
+      end, ft .. ": inserted once the reopened picker closed")
+    end
+
+    -- Apply-all with replacer's default `confirm_all = true`: the picker
+    -- closes, a lib.nvim confirm float opens, and the apply runs only on
+    -- "Yes" (synchronously, right after the float closed). -----------------
+    do
+      local target_win, target_buf = target({ "c1" })
+      local snapshot = api.nvim_buf_get_lines(target_buf, 0, -1, false)
+      local picker = open_prompt(ft)
+      fa.register_replace_finish(target_win, snapshot, "local c = vim.c", opts)
+      api.nvim_win_close(picker, true)
+      local confirm_win = open_prompt("lib-kit-confirm")
+      flush()
+      H.ok(watcher_armed(), ft .. ": the watcher waits while the apply-all confirmation is open")
+      api.nvim_win_close(confirm_win, true)
+      api.nvim_buf_set_lines(target_buf, 0, -1, false, { "c1 CHANGED" })
+      H.wait_until(function()
+        return api.nvim_buf_get_lines(target_buf, 0, 1, false)[1] == "local c = vim.c"
+      end, ft .. ": confirmed apply-all -> alias inserted")
+    end
+
+    -- ... and answered "No": nothing inserted, watcher removed --------------
+    do
+      local target_win, target_buf = target({ "n1" })
+      local snapshot = api.nvim_buf_get_lines(target_buf, 0, -1, false)
+      local picker = open_prompt(ft)
+      fa.register_replace_finish(target_win, snapshot, "should not appear", opts)
+      api.nvim_win_close(picker, true)
+      local confirm_win = open_prompt("lib-kit-confirm")
+      flush()
+      api.nvim_win_close(confirm_win, true)
+      flush()
+      H.eq(
+        table.concat(api.nvim_buf_get_lines(target_buf, 0, -1, false), "|"),
+        "n1",
+        ft .. ": apply-all declined -> nothing inserted"
+      )
+      H.falsy(watcher_armed(), ft .. ": and the watcher is removed")
+    end
   end
 
   H.eq(#unrecognised, 0, "a recognised picker never triggers the 'not recognised' notification")

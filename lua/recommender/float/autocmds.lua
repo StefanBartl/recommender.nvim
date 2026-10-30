@@ -6,7 +6,11 @@
 ---Both picker backends of replacer.nvim are recognised by the filetype of the
 ---closing window's buffer: Telescope's prompt (`TelescopePrompt`) and
 ---fzf-lua's terminal window (`fzf`). Both close the window *before* running
----the chosen action (the apply), so the change check runs on the next tick.
+---the chosen action (the apply), and replace-and-reopen schedules the new
+---picker only after that apply, so the change check runs two ticks later.
+---replacer's apply-all confirmation (a lib.nvim confirm float, default
+---`confirm_all = true`) counts as part of the picker session: the apply only
+---runs once it is answered.
 
 local M = {}
 
@@ -46,11 +50,29 @@ function M.is_picker_win(winid)
   return is_picker_buf(api.nvim_win_get_buf(winid))
 end
 
+---Filetypes of the other windows a :Replace session may show between the
+---picker closing and the apply: replacer's apply-all confirmation.
+---@type table<string, true>
+local SESSION_FILETYPES = { ["lib-kit-confirm"] = true }
+
+---@internal
+---True when `winid` is a picker window or another window of the :Replace
+---session (the apply-all confirmation) whose close may precede the apply.
+---@param winid integer
+---@return boolean
+local function is_session_win(winid)
+  if not api.nvim_win_is_valid(winid) then
+    return false
+  end
+  local buf = api.nvim_win_get_buf(winid)
+  return is_picker_buf(buf) or (api.nvim_buf_is_valid(buf) and SESSION_FILETYPES[vim.bo[buf].filetype] == true)
+end
+
 ---@internal
 ---@return boolean
-local function any_picker_open()
+local function any_session_win_open()
   for _, win in ipairs(api.nvim_list_wins()) do
-    if M.is_picker_win(win) then
+    if is_session_win(win) then
       return true
     end
   end
@@ -80,6 +102,7 @@ end
 ---- picker closed, buffer changed       -> alias inserted, watcher removed
 ---- picker closed, buffer unchanged     -> cancelled, watcher removed silently
 ---- another picker window still open    -> keep watching (replace-and-reopen)
+---- apply-all confirmation still open   -> keep watching (applies on "Yes")
 ---- no picker seen within `start_timeout_ms` and buffer unchanged -> watcher
 ---  removed and a warning names why nothing was inserted (no matches, or a
 ---  picker this plugin does not recognise)
@@ -121,9 +144,12 @@ function M.register_replace_finish(target_win, buf_snapshot, alias_text, opts)
   end
 
   -- A picker window closed: the action (the apply) runs right after the close
-  -- in both backends, so decide on the next tick.
+  -- in both backends, and replace-and-reopen schedules the next picker only
+  -- after that apply. Deciding one tick later would insert the alias before
+  -- the reopened picker exists, shift every line below it and make replacer
+  -- skip the remaining matches as stale; two ticks later the picker is open.
   local function settle()
-    if done or gen ~= current_gen or any_picker_open() then
+    if done or gen ~= current_gen or any_session_win_open() then
       return
     end
     if not insert_if_changed() then
@@ -133,11 +159,13 @@ function M.register_replace_finish(target_win, buf_snapshot, alias_text, opts)
 
   autocmd.create("WinClosed", function(args)
     local winid = tonumber(args.match)
-    if done or not winid or not M.is_picker_win(winid) then
+    if done or not winid or not is_session_win(winid) then
       return
     end
     seen_picker = true
-    vim.schedule(settle)
+    vim.schedule(function()
+      vim.schedule(settle)
+    end)
   end, { group = group })
 
   -- fzf-lua sets its filetype once with events ignored, then again normally;
@@ -147,7 +175,7 @@ function M.register_replace_finish(target_win, buf_snapshot, alias_text, opts)
   end, { group = group, pattern = vim.tbl_keys(M.PICKER_FILETYPES) })
 
   vim.defer_fn(function()
-    if done or gen ~= current_gen or seen_picker or any_picker_open() then
+    if done or gen ~= current_gen or seen_picker or any_session_win_open() then
       return
     end
     if insert_if_changed() then

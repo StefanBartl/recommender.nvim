@@ -395,9 +395,10 @@ Enabled with `-r` or `--replace`. When `Enter` is pressed in the float:
    occurrences of the chain in the current buffer with the alias name (never
    in the other files a `path` or `cwd` scope scanned).
 3. A one-shot `WinClosed` autocmd detects when the replace picker closes
-   (a TelescopePrompt window, or fzf-lua's `fzf` window). Cancelled: nothing
-   is inserted. No recognised picker within 5 seconds and no change: a
-   warning says the alias was not inserted.
+   (a TelescopePrompt window, or fzf-lua's `fzf` window). A picker reopened
+   by replace-and-reopen, or the apply-all confirmation, is waited for.
+   Cancelled: nothing is inserted. No recognised picker within 5 seconds and
+   no change: a warning says the alias was not inserted.
 4. After the replace, the `local alias = chain` declaration is inserted.
 
 If `:Replace` is not available, replace mode falls back to a plain alias

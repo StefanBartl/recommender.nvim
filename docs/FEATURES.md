@@ -180,8 +180,11 @@ Requires a `:Replace` user command from another plugin —
 Detection of "the replace finished" is event-driven: a one-shot `WinClosed`
 autocmd watches for the picker window of either replacer.nvim backend
 closing (Telescope's `TelescopePrompt`, fzf-lua's `fzf` terminal), checks the
-buffer on the next tick (both backends apply after closing the window), and
-removes itself. A cancelled `:Replace` (buffer unchanged) inserts nothing. If
+buffer a moment later (both backends apply after closing the window), and
+removes itself. It keeps waiting while the picker session goes on: a picker
+reopened by replace-and-reopen, or the apply-all confirmation (the alias goes
+in after the last apply, so it never shifts the matches still to be applied).
+A cancelled `:Replace` (buffer unchanged) inserts nothing. If
 no recognised picker opens within 5 seconds and the buffer is unchanged (no
 matches, or another picker), a warning says the alias was not inserted.
 
