@@ -55,9 +55,15 @@ Adding one: write `TESTS/<name>_spec.lua` returning
 `function(H) ... end`; testing.nvim discovers it by the `_spec.lua` suffix. `H` is the harness —
 `eq`, `ok`, `falsy`, `find` (look a suggestion up by chain, so a spec never
 depends on result order it is not asserting), `scratch` (a buffer filled
-with lines, made current), and `wait_until` (poll a predicate via `vim.wait`
-for code that finishes through a `vim.schedule` chain rather than returning
-a value directly — see `project_spec.lua`'s async cases).
+with lines, made current), `wipe` (delete the buffers a spec created),
+`drop_user_command` (delete a user command the spec brought in), and
+`wait_until` (poll a predicate via `vim.wait` for code that finishes through a
+`vim.schedule` chain rather than returning a value directly — see
+`project_spec.lua`'s async cases).
+
+A spec cleans up what it creates: the state guard runs as `error`
+(`.testing.lua`), so a leftover buffer, keymap, autocmd group, user command or
+changed option fails the spec file that left it.
 
 ## Coverage
 

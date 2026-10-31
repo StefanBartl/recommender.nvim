@@ -111,6 +111,7 @@ return function(H)
   H.ok(inserted, "... and the regex suggestion falls back to the plain insert")
 
   -- The flag text names exactly these exclusions --------------------------------------------
+  local had_command = vim.fn.exists(":Recommender") == 2
   require("recommender.bindings.usrcmds").setup({})
   local composer = require("lib.nvim.bindings.usercmd.composer")
   local replace_desc
@@ -124,4 +125,5 @@ return function(H)
     replace_desc:find("javascript", 1, true) and replace_desc:find("perf", 1, true),
     "the --replace text names the analyzers that only insert: " .. tostring(replace_desc)
   )
+  H.drop_user_command("Recommender", had_command)
 end

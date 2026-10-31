@@ -55,6 +55,27 @@ function H.scratch(lines)
   return buf
 end
 
+--- Wipe buffers a spec created (e.g. with `H.scratch`), so the spec leaves no
+--- buffer behind for the state guard. Already-invalid buffers are skipped.
+---@param ... integer bufnr
+function H.wipe(...)
+  for _, buf in ipairs({ ... }) do
+    if vim.api.nvim_buf_is_valid(buf) then
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end
+  end
+end
+
+--- Delete the user command `name` unless it existed when `existed` was taken
+--- (`vim.fn.exists(":" .. name) == 2` before the spec ran).
+---@param name string
+---@param existed boolean
+function H.drop_user_command(name, existed)
+  if not existed and vim.fn.exists(":" .. name) == 2 then
+    vim.api.nvim_del_user_command(name)
+  end
+end
+
 --- Pump the event loop (via `vim.wait`) until `predicate()` is truthy, or
 --- fail with a descriptive error once `timeout_ms` elapses. For code that
 --- finishes via `vim.schedule` chains (e.g. `project.read_lines_async`)

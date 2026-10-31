@@ -14,18 +14,17 @@ return {
   -- "none" = all specs in one nvim, "file" = one nvim per spec file
   -- (nothing leaks from one file into the next).
   isolated = "none",
-  -- Guards (docs/GUARDS.md of testing.nvim): every guard errors except the state guard.
+  -- Guards (docs/GUARDS.md of testing.nvim): every guard errors.
   guards = {
     fs = "error",
     scheduled_error = "error",
     prompt = "error",
     deprecation = "error",
     process_net = "error",
-    -- warn: the specs leave scratch buffers plus the setup() keymaps and autocmds behind.
-    -- isolated = "file" would clean that up but exposes a real bug of the specs: float_keymaps_spec.lua:111
-    -- ("falls through to the one normal window left") expects window 1008 but gets 1000 in a fresh
-    -- editor; it only holds when an earlier spec file left window 1000 holding a special buffer.
-    state = "warn",
+    -- error: the suite leaves no state behind. Each spec wipes the buffers it creates, deletes the
+    -- keymaps, autocmd groups and :Recommender user command it brings in, and restores options.
+    -- isolated stays "none" for speed (about 1.6 s against 7.5 s); the suite is green with "file" too.
+    state = "error",
   },
   guard_allow = {
     fs = {

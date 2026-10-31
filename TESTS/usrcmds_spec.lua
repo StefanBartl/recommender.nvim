@@ -129,6 +129,7 @@ return function(H)
       local literal = root .. "/bufdir/foo.txt"
       local buf = H.scratch({ "" })
       local path, err = resolve_cfile(literal, buf)
+      H.wipe(buf)
       H.eq(path, vim.fn.fnamemodify(literal, ":p"), "a literally-readable cfile resolves as-is")
       H.falsy(err, "...with no error")
     end
@@ -138,6 +139,7 @@ return function(H)
       local buf = H.scratch({ "" })
       vim.api.nvim_buf_set_name(buf, root .. "/bufdir/dummy_source.lua")
       local path, err = resolve_cfile("foo.txt", buf)
+      H.wipe(buf)
       H.eq(
         path,
         vim.fn.fnamemodify(root .. "/bufdir/foo.txt", ":p"),
@@ -156,6 +158,7 @@ return function(H)
       local buf = H.scratch({ "" })
       vim.api.nvim_buf_set_name(buf, root .. "/bufdir/dummy_source2.lua") -- no bar.txt here
       local path, err = resolve_cfile("bar.txt", buf)
+      H.wipe(buf)
       H.eq(
         vim.fs.normalize(path),
         vim.fs.normalize(root .. "/pathdir/bar.txt"),
@@ -169,6 +172,7 @@ return function(H)
     do
       local buf = H.scratch({ "" }) -- freshly created, never named
       local path, err = resolve_cfile("bar.txt", buf)
+      H.wipe(buf)
       H.eq(vim.fs.normalize(path), vim.fs.normalize(root .. "/pathdir/bar.txt"), "an unnamed buffer still resolves via 'path'")
       H.falsy(err, "...with no error")
     end
@@ -178,6 +182,7 @@ return function(H)
       local buf = H.scratch({ "" })
       vim.api.nvim_buf_set_name(buf, root .. "/bufdir/dummy_source3.lua")
       local path, err = resolve_cfile("does_not_exist.txt", buf)
+      H.wipe(buf)
       H.falsy(path, "an unresolvable cfile returns nil")
       H.eq(err, [[no readable file found for "does_not_exist.txt" under the cursor]], "...with a message naming the file")
     end

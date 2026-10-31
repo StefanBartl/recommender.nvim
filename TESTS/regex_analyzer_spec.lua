@@ -57,7 +57,8 @@ return function(H)
   H.ok(ordered[1].count >= ordered[#ordered].count, "results are sorted by count, descending")
 
   -- Reads the current buffer when given no lines ------------------------------
-  H.scratch({ "vim.o.number = true", "vim.o.relativenumber = true" })
+  local src = H.scratch({ "vim.o.number = true", "vim.o.relativenumber = true" })
   local from_buffer = regex.analyze(2, {}, {})
+  H.wipe(src)
   H.ok(H.find(from_buffer, "vim.o"), "omitting `lines` scans the current buffer")
 end

@@ -14,6 +14,26 @@
 return function(H)
   local keymaps = require("recommender.bindings.keymaps")
 
+  -- State this spec must not leave behind: bind() sets real global keymaps, and
+  -- its which-key group label is queued behind a VimEnter/User autocmd while
+  -- which-key is not loaded. A stub which-key takes the label at once (no
+  -- autocmd), and every keymap that was not there before is deleted at the end.
+  local MODES = { "n", "v", "x", "s", "o", "i", "c", "t" }
+  local function keymap_set()
+    local set = {}
+    for _, mode in ipairs(MODES) do
+      for _, m in ipairs(vim.api.nvim_get_keymap(mode)) do
+        set[mode .. "|" .. m.lhs] = { mode = mode, lhs = m.lhs }
+      end
+    end
+    return set
+  end
+  local keymaps_before = keymap_set()
+  local stubbed_which_key = package.loaded["which-key"] == nil
+  if stubbed_which_key then
+    package.loaded["which-key"] = { add = function() end }
+  end
+
   -- Override resolution --------------------------------------------------
   local defaults = keymaps.bind(true)
   H.eq(#defaults, 8, "all eight actions are declared")
@@ -103,4 +123,14 @@ return function(H)
     by_name(bound, "high_threshold").rhs()
   end)
   H.eq(captured, "Recommender regex 5 --threshold=9", "...and a count on it overrides the baked-in 5, per its own doc comment")
+
+  -- Cleanup ------------------------------------------------------------------
+  for key, m in pairs(keymap_set()) do
+    if not keymaps_before[key] then
+      vim.api.nvim_del_keymap(m.mode, m.lhs)
+    end
+  end
+  if stubbed_which_key then
+    package.loaded["which-key"] = nil
+  end
 end

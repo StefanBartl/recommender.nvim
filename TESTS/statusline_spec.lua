@@ -23,6 +23,9 @@ return function(H)
     return buf
   end
 
+  -- Only an autocmd group this spec brought in is removed at the end.
+  local had_group = pcall(vim.api.nvim_get_autocmds, { group = "recommender_statusline" })
+
   config.setup({ analyzer = "regex", threshold = 2 })
 
   -- Nothing to say ----------------------------------------------------------
@@ -78,4 +81,13 @@ return function(H)
   -- The lualine alias -------------------------------------------------------
   H.eq(type(statusline.lualine_component), "function", "lualine_component is callable")
   H.eq(type(statusline.lualine_component()), "string", "...and returns a string")
+
+  -- Cleanup: the buffers above, and the BufDelete/BufWipeout autocmd the first
+  -- cache write registered. The module remembers that registration, so it is
+  -- dropped from package.loaded too: a later require registers it afresh.
+  H.wipe(empty, many, one, cached_buf, unknown)
+  if not had_group then
+    pcall(vim.api.nvim_del_augroup_by_name, "recommender_statusline")
+    package.loaded["recommender.statusline"] = nil
+  end
 end

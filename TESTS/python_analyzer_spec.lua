@@ -39,8 +39,9 @@ return function(H)
   H.eq(#blocked, 0, "a blacklisted prefix removes the chain entirely")
 
   -- Reads the current buffer when given no lines ------------------------------
-  H.scratch({ "sys.argv.append(1)", "sys.argv.append(2)" })
+  local src = H.scratch({ "sys.argv.append(1)", "sys.argv.append(2)" })
   local from_buffer = py.analyze(2, {}, {})
+  H.wipe(src)
   H.ok(H.find(from_buffer, "sys.argv"), "omitting `lines` scans the current buffer")
 
   -- Ordering: sorted by count, descending ------------------------------------

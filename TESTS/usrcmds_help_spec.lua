@@ -24,6 +24,7 @@ return function(H)
   )
 
   -- `setup` only stores `cfg` for `execute`, which registering the verb never runs.
+  local had_command = vim.fn.exists(":Recommender") == 2
   require("recommender.bindings.usrcmds").setup({})
   H.ok(composer.registry().Recommender ~= nil, ":Recommender is registered through the composer")
 
@@ -75,4 +76,5 @@ return function(H)
   H.eq(flag_texts, 3, "the flags -r, -c and -t were found")
   H.eq(#malformed, 0, "malformed texts: " .. table.concat(malformed, " | "))
   H.eq(#bare, 0, "completion values without a text: " .. table.concat(bare, ", "))
+  H.drop_user_command("Recommender", had_command)
 end

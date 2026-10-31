@@ -43,8 +43,9 @@ return function(H)
   H.eq(#blocked, 0, "a blacklisted prefix removes the chain entirely")
 
   -- Reads the current buffer when given no lines ------------------------------
-  H.scratch({ "const a = process.env.NODE_ENV;", "const b = process.env.PATH;" })
+  local src = H.scratch({ "const a = process.env.NODE_ENV;", "const b = process.env.PATH;" })
   local from_buffer = js.analyze(2, {}, {})
+  H.wipe(src)
   H.ok(H.find(from_buffer, "process.env"), "omitting `lines` scans the current buffer")
 
   -- Ordering: sorted by count, descending ------------------------------------
